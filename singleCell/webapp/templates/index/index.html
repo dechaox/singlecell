@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html class="full-height" lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Single Cell Explorer</title>    
+    {% include  "common/libx1.html"  %}
+  </head>
+
+  <style type="text/css">
+   
+    html, body{
+        min-height: 100% !important;
+        height: 100%;
+        min-width:860px;
+    }
+    
+    .node{
+
+      cursor: pointer;
+
+
+
+    }
+
+    .scattertooltip {  
+      position: absolute;     
+      
+      opacity: 0.9;
+      padding: 2px;       
+      font: 12px sans-serif;    
+      background: lightsteelblue;
+      background-opacity:0.7; 
+      border: 0px;
+      border-radius: 8px;     
+      pointer-events: none;
+      display: none;    
+         
+  }
+
+ 
+
+    .node_draw_path {
+            fill: none;
+            stroke-width: 1px;
+            stroke: #278BC5;
+    }
+     
+
+    .node_done_path {
+            fill: none;
+            stroke-width: 1px;
+            stroke: #278BC5;
+    }
+
+
+
+
+
+
+  </style>
+
+  <body>
+    <nav class="navbar navbar-light bg-light static-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">Single Cell Explorer</a>
+        <!--a class="nav-link" href="/" style='color:#0d47a1;'>Index</a>
+        <a class="btn btn-primary" href="#">Sign In</a-->
+        
+      </div>
+    </nav>
+
+
+    
+    <div style="height: 13px;"></div>
+    <div class="container-fluid" style="height: calc(100% - 87px);">
+      <div class='row h-100'>
+        <div class='col-8'>
+            <div class='card h-100' id='mainpanel'>
+                <a value='5b6f642daab9e77dab6104f8' name='linkbtn' style='color:#0d47a1;cursor: pointer;'>test sample</a>
+
+                
+
+            </div>
+
+        </div>
+
+        <div class='col-4'>
+            <div class='h-100' id='infopanel'  style="overflow-y: auto;">
+                
+
+            </div>
+
+        </div>
+      </div>
+
+
+    </div>
+
+
+
+
+    <!--div class="modal fade" id="sampleListModal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Single Cell Samples</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+              
+          </div>
+          <div class="modal-footer">
+             
+          </div>
+        </div>
+      </div>
+    </div-->
+
+    
+  
+    <script type="text/javascript">
+
+      
+      $(function() {
+          //index model display
+          //$('#sampleListModal').modal("show");
+
+
+
+
+
+
+          sampleObjectId="";
+          $("[name='linkbtn']").click(function(){
+
+              sampleObjectId= $(this).attr("value");
+
+              
+              
+              startLoading();
+              
+              $.ajax({
+
+                  url:"/getMapDataBySampleId",
+                  data:{"sampleid":sampleObjectId},
+                  method:"post",
+                  dataType:"JSON",
+                  success:function(data){
+                    var tsnedt = data.tsneData;
+                    var clstrs = data.clstr;
+
+                    renderInfoPanel(clstrs,"#infopanel");
+
+                    renderTsneMap(tsnedt,clstrs,"#mainpanel");
+
+                  },
+                  error:function(){
+
+
+
+                  }
+
+
+              })
+
+
+              
+
+
+
+
+          });
+
+
+
+          function renderInfoPanel(clstrs,div_id){
+
+
+
+            var panelstr='';
+
+              panelstr+='<div class="card">';
+                panelstr+='<div class="card-header">';
+                  panelstr+='<a class="card-link" data-toggle="collapse" href="#genesearch">Gene search</a>'
+                panelstr+='</div>';
+                panelstr+='<div id="genesearch" class="collapse show"  data-parent="#infopanel">';
+                  panelstr+='<div class="card-body"></div>';
+                panelstr+='</div>';
+
+              panelstr+='</div>';
+              ////
+
+              panelstr+='<div class="card">';
+                panelstr+='<div class="card-header">';
+                  panelstr+='<a class="card-link" data-toggle="collapse" href="#clustersInfo">Clusters</a>'
+                panelstr+='</div>';
+                panelstr+='<div id="clustersInfo" class="collapse"  data-parent="#infopanel">';
+                  panelstr+='<div class="card-body"> aaaaaaaa  </div>';
+                panelstr+='</div>';
+
+              panelstr+='</div>'
+              /////
+              panelstr+='<div class="card">';
+                panelstr+='<div class="card-header">';
+                  panelstr+='<a class="card-link" data-toggle="collapse" href="#function3">function 3</a>'
+                panelstr+='</div>';
+                panelstr+='<div id="function3" class="collapse"  data-parent="#infopanel">';
+                  panelstr+='<div class="card-body">  </div>';
+                panelstr+='</div>';
+
+              panelstr+='</div>'
+
+
+
+
+            $(div_id).html(panelstr);
+
+
+
+
+            
+            var genesearchpanel = $(div_id).find("#genesearch").find(".card-body");
+
+
+            var clusterpanel = $(div_id).find("#clustersInfo").find(".card-body");
+            
+            genesearchpanel.html("");
+            clusterpanel.html("");
+            //alert(JSON.stringify(clstrs))
+
+            
+            for(var  i in clstrs){
+
+              clusterpanel.append("<a class='clstrlist' clstrid='"+i+"' name='"+clstrs[i]["clstrName"]+"' style='color:"+clstrs[i]["color"]+"'>"+clstrs[i]["clstrType"]+","+clstrs[i]["clstrName"]+"</a><br>");
+
+            }
+
+            $(".clstrlist").click(function(){
+
+              var clstrid = $(this).attr("clstrid");
+              $.ajax({
+
+                  url:"/getClusterCellids",
+                  data:{"sampleid":sampleObjectId,"clstrid":clstrid},
+                  method:"post",
+                  dataType:"JSON",
+                  success:function(data){
+                     
+
+                  },
+                  error:function(){
+
+
+
+                  }
+
+
+
+              })
+
+
+
+
+            });
+
+            genesearchpanel.html("<textarea name='genesearcharea' rows='4' style='width:100%;max-width:200px;'></textarea><br>")
+            genesearchpanel.append("<button name='genesearchbtn'>search</button>")
+            
+            genesearchpanel.find("[name='genesearchbtn']").click(function(){
+              var genestr = genesearchpanel.find("[name='genesearcharea']").val();
+              genestr = genestr.replace(/ /gi,"").replace(/\n/gi,",").toUpperCase();
+              //ajax
+              $.ajax({
+
+                  url:"/genelistSearch",
+                  data:{"sampleid":sampleObjectId,"genestr":genestr},
+                  method:"post",
+                  dataType:"JSON",
+                  success:function(data){
+                     
+
+                  },
+                  error:function(){
+
+
+
+                  }
+
+
+
+              })
+
+
+
+            })
+
+          }
+
+  
+ 
+
+
+          function renderTsneMap(data,clstrs,div_id){
+
+
+            var defaultBG = "#f5f7f7";
+            var defaultNodeColor = "#B9B9B9"
+            var defaultR=4;
+
+            var scMainSvg;
+            var mainXscale;
+            var mainYscale;
+            var mainTransform;
+            var selectednodes;
+
+
+            $(div_id).css("background",defaultBG).html("");
+
+            var width = $(div_id).width();
+            var height = $(div_id).height();
+
+            
+
+            var margin = 20;
+            var size = Math.floor(d3.min([width,height]));
+            size = size- 2*margin ;
+            
+            scMainSvg = d3.select(div_id).append('svg').attr("id","mainsvg")
+              .attr('width', width )
+              .attr('height', height );
+
+
+            //scMainSvg.append("rect").attr("x",0).attr("y",0).attr("width",100).attr("height",100).style("fill","#777777")
+
+
+            
+            var xrange=[0,0];
+            var yrange=[0,0];
+            for(var i in data){
+              let tempx = data[i].x;
+              let tempy = data[i].y;
+              
+              if(tempx < xrange[0]){
+                xrange[0]=Math.floor(tempx);
+              }else if(tempx > xrange[1]){
+                xrange[1]=Math.ceil(tempx);
+              }
+
+              if(tempy < yrange[0]){
+                yrange[0]=Math.floor(tempy);
+              }else if(tempy > yrange[1]){
+                yrange[1]=Math.ceil(tempy);
+              }
+
+            }
+
+
+            //xrange[0]=xrange[0]-1;
+            //xrange[1]=xrange[1]+1;
+
+            //yrange[0]=yrange[0]-1;
+            //yrange[1]=yrange[1]+1;
+
+
+            var mainXscale = d3.scaleLinear()
+            .domain(xrange)
+            .range([0, size]);
+
+
+
+            var mainYscale = d3.scaleLinear()
+            .domain(yrange)
+            .range([size, 0]);
+
+
+            var g = scMainSvg.append("g").attr("transform","translate("+margin+","+margin+")");
+            //mainTransform = d3.transform().translate(margin,margin);
+            
+            var cell_nodes = g.selectAll('.node')
+              .data(data)
+              .enter().append('circle')
+              .attr("id", function(d){return d.order;})
+              .attr('class', 'node')
+              .attr("cid",function(d){return d._id;})
+              .attr('cx', function(d){return mainXscale(d.x);})
+              .attr('cy', function(d){return mainYscale(d.y);})
+              .attr('r', defaultR)
+              .style('fill',   defaultNodeColor )
+              .style("fill-opacity",0.5)
+              .style("stroke","white")
+              .style("stroke-width","0.5");
+
+
+
+
+           
+            
+            //render label;
+            var labeldt =[];
+
+            /*
+            d3.selectAll(".node").on("mouseover", handleMouseOverNode)
+              .on("mouseout", handleMouseOutNode)
+              .on("click", handleClickNode);
+
+            */
+
+
+              function zoomed() {
+                var transform = d3.event.transform;
+                mainTransform = transform;
+                //translate(-15.404482967761254,5.436876341562794) scale(1)
+
+
+                //var k = transform.k;
+                //var x = transform.x;
+                //var y = transform.y;
+                d3.selectAll(".node").attr("cx", function(d) {
+                  return transform.applyX(mainXscale(d.x));
+                }).attr("cy", function(d) {
+                  return transform.applyY(mainYscale(d.y));
+                });
+
+                /*
+
+                d3.selectAll(".genelabel").each(function(d){
+
+                  let gene = d3.select(this).text();
+
+                  genenode = d3.select("#"+gene);
+                  let tempx = Number(genenode.attr("cx"));
+                  let tempy = Number(genenode.attr("cy"));
+
+                  d3.select(this).attr("x",tempx+5).attr("y",tempy+3);
+
+
+                });
+
+                
+
+                clstrlabels.attr("x", function(d) {
+                  return transform.applyX(mainXscale(d.x));
+                }).attr("y", function(d) {
+                  return transform.applyY(mainYscale(d.y));
+                });
+                */
+              }
+
+
+              //var svgZoom = d3.zoom().scaleExtent([1 / 160, 160]).on("zoom", zoomed);
+              //scMainSvg.call(svgZoom);
+
+
+              selectednodes=[];
+
+
+              var coords =[];
+              var selectedline =d3.line();
+              var ori_coords=[];
+
+              var dragStart = function(){
+
+                cell_nodes.classed("selected", false);
+
+                coords = [];
+                   
+                d3.selectAll(".node_draw_path").remove();
+                d3.selectAll(".node_done_path").remove();
+                  
+                cell_nodes.style("stroke","white").style("stroke-width",0.5);
+                  
+                //$("[name='saveSelectedGenesDiv']").html("");
+
+              }
+              var drawPath = function(isdone) {
+                if(coords.length>1){
+
+
+                  g.append("path").attr("class",'node_draw_path').attr( "d",selectedline([coords[coords.length-2],   coords[coords.length-1] ]));
+
+                  if (isdone) {
+
+                    coords = coords.concat([coords[0]]);
+
+                    ori_coords=[];
+                    if(mainTransform!==undefined){
+                      for(var ii in coords){
+                        var tempx = mainTransform.invertX(coords[ii][0]);
+                        var tempy = mainTransform.invertY(coords[ii][1]);
+                        var tempx = mainXscale.invert(tempx);
+                        var tempy = mainYscale.invert(tempy);
+                        tempx=tempx+margin;
+                        tempy=tempy+margin;
+                        ori_coords.push([tempx,tempy]);
+
+                      }
+                    }else{
+
+                        for(var ii in coords){
+                                var tempx = mainXscale.invert(coords[ii][0]);
+                                var tempy = mainYscale.invert(coords[ii][1]);
+                                tempx=tempx+margin;
+                                tempy=tempy+margin;
+                                ori_coords.push([tempx,tempy]);
+                        }
+                    }
+
+
+
+                    g.append("path").attr("class","node_done_path").attr("d", selectedline(coords ) );
+
+                    g.selectAll(".node_draw_path").remove();
+
+
+                    cell_nodes.each(function(d, i) {
+                      point = [d3.select(this).attr("cx"), d3.select(this).attr("cy")];
+                      if (pointInPolygon(point, coords)) {
+                        d3.select(this).classed("selected", true)
+                      }
+
+                    });
+
+                    selectPath();
+                  }
+
+                }
+              }
+
+              var selectPath = function(){
+
+
+                let templen =$(".node.selected").length;
+
+                if(templen>0){
+
+                  selectednodes = [];
+                  $(".node.selected").each(function(){
+                    selectednodes.push($(this).attr("id"));
+                    
+                    $(this).css("stroke","#278BC5").css("stroke-width",1);;
+                  })
+
+                  //execafterselected();
+
+                  
+                }else{
+                  $(".node").css("stroke","white").css("stroke-width",0.5);
+                    //$("[name='cellselectinfo']").html("");
+                  dragStart();
+
+                }
+              }
+
+
+              var dragMove = function() {
+                cell_nodes.classed("selected", false);
+                let tempcoord = d3.mouse(this);
+
+
+                //tempcoord[0] = tempcoord[0]-gtranslate[0];
+                //tempcoord[1] = tempcoord[1]-gtranslate[1];
+                
+                tempcoord[0] = tempcoord[0]-margin;
+                tempcoord[1] = tempcoord[1]-margin;
+                if(coords.length>0){
+                  let lastcoord = coords[coords.length-1];
+                  if(Math.abs(lastcoord[0]-tempcoord[0])+ Math.abs(lastcoord[1]-tempcoord[1]) >2){
+                    coords.push(tempcoord);
+                    drawPath();
+
+                  }
+                }else{
+                  coords.push(tempcoord);
+                  drawPath();
+                }
+
+              }
+                
+
+              var dragEnd = function() {
+                drawPath(true);
+
+              }
+
+              svgDrag = d3.drag().on("start", dragStart).on("drag", dragMove).on("end", dragEnd);
+              scMainSvg.call(svgDrag)
+    
+
+
+
+          }
+
+
+
+          pointInPolygon = function (point, vs) {
+            // ray-casting algorithm based on
+            // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+            var xi, xj, i, intersect,
+                x = point[0],
+                y = point[1],
+                inside = false;
+            for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+              xi = vs[i][0],
+              yi = vs[i][1],
+              xj = vs[j][0],
+              yj = vs[j][1],
+              intersect = ((yi > y) != (yj > y))
+                  && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+              if (intersect) inside = !inside;
+            }
+            return inside;
+          }
+
+
+
+
+          function startLoading(){
+
+
+              var loadingstr='<div class="h-100" style="display: flex;justify-content: center;align-items: center;vertical-align: middle;"><div class="loader"><div class="dot dot1"><i></i></div><div class="dot dot2"><i></i></div><div class="dot dot3"><i></i></div><div class="dot dot4"><i></i></div><div class="dot dot5"><i></i></div><div class="dot dot6"><i></i></div><div class="dot dot7"><i></i></div><div class="dot dot8"><i></i></div><div class="dot dot9"><i></i></div></div></div>'
+
+
+
+              $("#mainpanel").html(loadingstr);
+
+              $("#infopanel").html(loadingstr);
+          }
+
+          function endLoading(){
+
+              $("#mainpanel").html("");
+
+              $("#infopanel").html("");
+
+
+          }
+
+          function errorLoading(){
+
+              $("#mainpanel").html("server error");
+
+              $("#infopanel").html("server error");
+
+
+          }
+
+
+
+
+
+
+
+
+
+
+
+
+
+      });
+
+    </script>
+
+
+
+
+
+
+  </body>
+</html>
