@@ -22,7 +22,7 @@ import pyRserve;
 import base64;
 
 import copy
-
+import random
 
 client = MongoClient('localhost', 9999);
 
@@ -53,20 +53,94 @@ def getClusterInfo(sampleid):
 
 	resclstrs=dict();
 	for i in clstrs:
+		clstrtype = i["clstrType"];
 		idstr=str(i["_id"]);
-		i.pop("_id",None);
-		resclstrs[idstr]= i;
-
-		
-
+		i["_id"]=idstr;
+		if clstrtype in resclstrs:
+			resclstrs[clstrtype].append(i);
+		else:
+			resclstrs[clstrtype]=[i];
 
 	return resclstrs;
 
 
+def getExprdataByGene(sampleid,gene):
+	
+	genexpr = db["expr_"+sampleid].find_one({"_id":gene},{"count":1});
+
+	if genexpr == None:
+		return None;
+	countexpr= genexpr["count"];
+
+	res =[];
+	for i in range(len(countexpr)):
+		if countexpr[i] >0:
+			res.append(i);
+	
+	return res;
+
+
+
+def listExistsGenes(sampleid,genes):
+
+	fitGenes= db["expr_"+sampleid].distinct("_id",{"_id":{"$in":genes}})
+
+	return fitGenes;
+
+def listExistsGenesRegex(sampleid,geneRegex):
+
+	fitGenes= db["expr_"+sampleid].distinct("_id",{"_id":{"$regex":"^"+geneRegex,"$options": "i" }})
+	
+	return fitGenes;
+
+
+def savecluster(sampleid,name,ctype,cells,comment):
+
+	sampleid = ObjectId(sampleid);
+
+	color =getRandomColor();
+
+	clstrcount = db.cluster.find({"mapid":sampleid,"clstrName":name,"clstrType":ctype}).count();
+
+	if clstrcount == 0:
+		comment = comment.strip();
+		db.cluster.insert_one({"mapid":sampleid,"clstrName":name,"clstrType":ctype,"color":color,"cells":cells,"comment":comment,"x" : "", "y" : "", "label" : False, "prerender" : False,})
+		return "success"
+
+	else:
+
+		return "failed"
 
 
 
 
+
+
+
+
+
+
+def queryClstrCellsByCid(cid):
+	cid = ObjectId(cid);
+	cellids = db.cluster.find_one({"_id":cid},{"cells":1})["cells"];
+
+	return cellids;
+
+
+
+
+
+
+
+
+
+
+
+def getRandomColor():
+	r = lambda: random.randint(0,255);
+	color = '#%02X%02X%02X' % (r(),r(),r());
+
+	return color;
 
 
 """

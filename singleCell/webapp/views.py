@@ -15,9 +15,6 @@ from . import service;
 def index(request):
 
 
-
-
-
 	return render(request,"index/index.html");
 
 
@@ -33,13 +30,48 @@ def getMapDataBySampleId(request):
 	return JsonResponse({"tsneData":data,"clstr":clstrInfo});
 
 
+
 def genelistSearch(request):
 	sampleid = request.POST.get("sampleid");
 	genestr = request.POST.get("genestr");
 
-	gene = genestr.split(",")[0]
-	data = service.getExprdataByGene(sampleid,gene);
-	return JsonResponse({"res":data});
+	gene = genestr.replace(" ","");
+	gene = gene.split(",");
+	
+	gene2=[];
+	for i in gene:
+		if len(i) > 0:
+			gene2.append(i.upper());
+
+
+	data="";
+	geneCount=0;
+	gene="";
+	if len(gene2) >1:
+		data = service.listExistsGenes(sampleid,gene2);
+		geneCount = len(data);
+		if geneCount == 1:
+			gene = data[0];
+			data = service.getExprdataByGene(sampleid,data[0]);
+			
+	elif len(gene2) == 1:
+		gene2=gene2[0];
+		lastWord = gene2[-1];
+		if lastWord == "*":
+			data = service.listExistsGenesRegex(sampleid,gene2[0:-1]);
+			geneCount = len(data);
+			if geneCount == 1:
+				gene = data[0];
+				data = service.getExprdataByGene(sampleid,data[0]);
+				
+		else:
+			data = service.getExprdataByGene(sampleid,gene2);
+			gene=gene2;
+			if data== None:
+				geneCount=0;
+			else:
+				geneCount=1;
+	return JsonResponse({"res":data,"count":geneCount,"gene":gene});
 
 def getClusterCellids(request):
 	sampleid = request.POST.get("sampleid");
@@ -47,13 +79,31 @@ def getClusterCellids(request):
 
 
 
+def savecluster(request):
+	sampleid = request.POST.get("sampleid");
+	name = request.POST.get("name");
+	ctype = request.POST.get("type");
+	comment = request.POST.get("comment");
+	cells = request.POST.get("cells");
+	cells = cells.split(",");
+	cells2 = [];
+	for i in cells:
+		cells2.append(int(i));
+	data = service.savecluster(sampleid,name,ctype,cells2,comment);
+
+	return JsonResponse({"result":data});
 
 
 
 
 
+def queryClstrCellsByCid(request):
+
+	cid = request.POST.get("cid");
+	cellids = service.queryClstrCellsByCid(cid);
 
 
+	return JsonResponse({"cellids":cellids});
 
 
 

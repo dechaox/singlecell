@@ -9,5 +9,6 @@ urlpatterns = [
 
 	path("genelistSearch",views.genelistSearch,name='genelistSearch'),
 	path("getClusterCellids",views.getClusterCellids,name='getClusterCellids'),
-
+	path("savecluster",views.savecluster,name="savecluster"),
+	path("queryClstrCellsByCid",views.queryClstrCellsByCid,name="queryClstrCellsByCid"),
 ]
