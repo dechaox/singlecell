@@ -107,4 +107,12 @@ def queryClstrCellsByCid(request):
 
 
 
+def getSampleLists(request):
+	userid = request.POST.get("userid");
 
+	samples = service.getAllSampleInfo(userid);
+	
+	jsonres=dict();
+	jsonres["samples"]=samples;
+
+	return JsonResponse(jsonres)

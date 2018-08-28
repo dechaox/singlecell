@@ -44,6 +44,14 @@ def getMapDataBySampleId(sampleid):
 
 	return tsneMap;
 
+def getAllSampleInfo(userid):
+	data = db.dataInfo.find({},{"_id":1,"name":1,"study":1,"subjectid":1,"tissue":1,"source":1,"comment":1});
+	resdata=[];
+	for i in data:
+		i["_id"]=str(i["_id"]);
+		resdata.append(i);
+	return resdata;
+
 
 def getClusterInfo(sampleid):
 
