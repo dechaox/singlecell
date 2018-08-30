@@ -116,3 +116,13 @@ def getSampleLists(request):
 	jsonres["samples"]=samples;
 
 	return JsonResponse(jsonres)
+
+
+
+def getClusterClassification(request):
+
+	clstrType= request.POST.get("clstrType");
+
+	data = service.getClusterClassification(clstrType);
+
+	return JsonResponse({"clstrTypes":data})

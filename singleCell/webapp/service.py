@@ -45,7 +45,7 @@ def getMapDataBySampleId(sampleid):
 	return tsneMap;
 
 def getAllSampleInfo(userid):
-	data = db.dataInfo.find({},{"_id":1,"name":1,"study":1,"subjectid":1,"tissue":1,"source":1,"comment":1});
+	data = db.dataInfo.find({},{"_id":1,"name":1,"study":1,"subjectid":1,"tissue":1,"disease":1,"source":1,"comment":1});
 	resdata=[];
 	for i in data:
 		i["_id"]=str(i["_id"]);
@@ -84,8 +84,26 @@ def getExprdataByGene(sampleid,gene):
 	for i in range(len(countexpr)):
 		if countexpr[i] >0:
 			res.append(i);
+
 	
 	return res;
+
+
+def getExprNormailizedataByGene(sampleid,gene):
+	
+	genexpr = db["expr_"+sampleid].find_one({"_id":gene},{"normailize":1});
+
+	if genexpr == None:
+		return None;
+	countexpr= genexpr["normailize"];
+
+	res =[];
+	for i in range(len(countexpr)):
+		if countexpr[i] >0:
+			res.append(i);
+	
+	return res;
+
 
 
 
@@ -141,6 +159,42 @@ def queryClstrCellsByCid(cid):
 
 
 
+def getClusterClassification(clstrtype):
+
+	data = db[clstrtype].find({});
+
+	return list(data);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -149,6 +203,23 @@ def getRandomColor():
 	color = '#%02X%02X%02X' % (r(),r(),r());
 
 	return color;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 """

@@ -146,6 +146,37 @@
       </div>
     </div-->
 
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class="modal " id="defaultModal" tabindex="-1" role="dialog" aria-hidden="true"  > 
+      <div class="modal-dialog" role="document">
+        <div class="modal-content" >
+          <div class="modal-header">
+            <h5 class="modal-title"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body" >
+              
+              
+          </div>
+          <div class="modal-footer">
+             
+          </div>
+        </div>
+      </div>
+    </div>
     
   
     <script type="text/javascript">
@@ -156,6 +187,10 @@
       $(function() {
           //index model display
           //$('#sampleListModal').modal("show");
+
+
+          var appModel=0;
+
 
           var defaultBG = "#f5f7f7";
             var defaultNodeColor = "#B9B9B9"
@@ -169,6 +204,9 @@
 
 
           //startLoading();
+
+          var clstrs=[];
+
 
           sampleObjectId="";
 
@@ -212,7 +250,7 @@
 
                 sampleObjectId= $(this).attr("value");
 
-                
+                clstrs=[];
                 
                 startLoading2();
                 
@@ -224,11 +262,12 @@
                     dataType:"JSON",
                     success:function(data){
                       var tsnedt = data.tsneData;
-                      var clstrs = data.clstr;
+                      clstrs = data.clstr;
 
-                      renderInfoPanel(clstrs,"#infopanel");
+                      renderInfoPanel("#infopanel");
+                      renderTsneMap(tsnedt,"#mainpanel");
 
-                      renderTsneMap(tsnedt,clstrs,"#mainpanel");
+                     
 
                     },
                     error:function(){
@@ -331,8 +370,8 @@
           function clearAllNodes(){
 
             $(".node").css("fill",defaultNodeColor);//.removeAttr("clstr");
-            $("#genesearch").find("[name='genesearchdetails']").html("");
-            $("#clustersInfo").find("[cid]").html("<i class='far fa-square' style='color: steelblue;cursor:pointer;'></i>");
+            $("#genesearch").find("[name='genesearchdetails']").find("[name='genesearchplot']").html("");
+            //$("#clustersInfo").find("[cid]").html("<i class='far fa-square' style='color: steelblue;cursor:pointer;'></i>");
 
 
 
@@ -344,7 +383,7 @@
 
           }
 
-          function renderInfoPanel(clstrs,div_id){
+          function renderInfoPanel(div_id){
 
 
 
@@ -424,7 +463,7 @@
 
 
             genesearchpanel.html("<textarea name='genesearcharea' rows='4' style='width:100%;max-width:200px;'></textarea><br>")
-            genesearchpanel.append("<button name='genesearchbtn' class='btn btn-primary btn-sm'>search</button><br><div name='genesearchdetails'></div>")
+            genesearchpanel.append("<button name='genesearchbtn' class='btn btn-primary btn-sm'>search</button><hr></hr><div name='genesearchdetails'></div>")
             
             genesearchpanel.find("[name='genesearchbtn']").click(function(){
               var genestr = genesearchpanel.find("[name='genesearcharea']").val();
@@ -454,8 +493,8 @@
 
                           }
 
-                          genesearchpanel.find("[name='genesearchdetails']").html(gene);
-
+                          genesearchpanel.find("[name='genesearchdetails']").html("<div name='genesearchplot'></div>");
+                          renderGenesearchVioPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"));
                         }else if(geneCount ===0){
 
                           genesearchpanel.find("[name='genesearchdetails']").html("gene not found");
@@ -463,18 +502,7 @@
 
                         }else{
 
-                          /*
-                          var tempindex=0;
-                          for(var i in data){
-                            if(tempindex!==0){
-                              genesearchpanel.find("[name='genesearchdetails']").append(" , ")
-                            }
-                            tempindex+=1;
-                            genesearchpanel.find("[name='genesearchdetails']").append("<span name='fitedgene' style='cursor:pointer;'>"+data[i]+"</span>");
-                          }
-
-                          */
-                          genesearchpanel.find("[name='genesearchdetails']").html("<table name='genesearchrestable' class='display' style='width:100%'><thead><tr><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody></tbody></table>");
+                          genesearchpanel.find("[name='genesearchdetails']").html("<table name='genesearchrestable' class='display table table-striped table-bordered compact' style='width:100%;'><thead style='display:none;'><tr><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody style='font-size:11px;'></tbody></table><hr></hr><div name='genesearchplot'></div>");
 
                           
 
@@ -498,11 +526,27 @@
 
                           }
 
+
+                          if(index!==0){
+                            for(var i=index;i<6;i++){
+
+                                tablestr+="<td></td>"
+                            }
+                            tablestr+='</tr>'
+
+                          }
+
                           genesearchpanel.find("[name='genesearchrestable']").find("tbody").html(tablestr);
 
                           genesearchpanel.find("[name='genesearchrestable']").DataTable( {
-
-
+                              searching: false,
+                              info: false,
+                              "ordering": false,
+                              "pageLength": 5,
+                              "bLengthChange": false,
+                               
+                              "pagingType": "simple",
+                              "scrollX": true
 
                           })
 
@@ -512,7 +556,7 @@
                         }
 
 
-                        genesearchpanel.find("[name='fitedgene']").click(function(){
+                        genesearchpanel.on("click","[name='fitedgene']",function(){
 
                             var newgstr = $(this).text();
                             var newdiv= $(this);
@@ -524,8 +568,8 @@
                                 dataType:"JSON",
                                 success:function(res2){
 
-                                  genesearchpanel.find("[name='fitedgene']").css("color","black");
-                                  newdiv.css("color","steelblue");
+                                  genesearchpanel.find("[name='fitedgene']").css("color","black").attr("genechecked","F");
+                                  newdiv.css("color","steelblue").attr("genechecked","T");
 
 
                                   $(".node").css("fill",defaultNodeColor);//.removeAttr("clstr");
@@ -535,6 +579,10 @@
 
 
                                   }
+
+
+                                  renderGenesearchVioPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"));
+
 
                                 },error:function(){
 
@@ -565,17 +613,71 @@
 
 
             })
+            
+            //gene serch btn end
 
-          }
+            $("#clustersInfo").on('shown.bs.collapse', function(){
+                 var thisdiv = $("#clustersInfo").find("table").find("tbody");
+                 clearAllNodes();
+                 thisdiv.find("[ischecked='T']").each(function(){
+                    var cid = $(this).attr("cid");
+                    var color = $(this).parent().find("[cname]").css("color");
+                    var cname = $(this).parent().find("[cname]").attr("cname");
+                    $(".node[clstr='"+cname+"']").css("fill",color);
+
+
+                 })
+
+
+            });
+
+
+            $("#genesearch").on('shown.bs.collapse', function(){
+
+              var temp = $("#genesearch").find("[name='fitedgene'][genechecked='T']");
+
+              if(temp.length===1){
+
+                temp.trigger("click");
+
+              }else{
+
+                 if($("#genesearch").find("[name='genesearchrestable']").length===1){
+
+                 }else{
+
+                    $("#genesearch").find("[name='genesearchbtn']").trigger("click");
+                 }
+                
+                
+
+              } 
+
+            });
+
+
+            $("#CellSelection").on('shown.bs.collapse', function(){
+
+                appModel="editor";
+                
+            });
+
+            $("#CellSelection").on('hidden.bs.collapse', function(){
+
+                appModel=0;
+                
+            });
+
+            
+
+          }//render info panel
+
 
   
  
 
 
-          function renderTsneMap(data,clstrs,div_id){
-
-
-            
+          function renderTsneMap(data,div_id){
 
 
             $(div_id).css("background",defaultBG).html("");
@@ -636,29 +738,6 @@
             .domain(yrange)
             .range([size, 0]);
 
-
-            var g = scMainSvg.append("g").attr("id","maing").attr("transform","translate("+margin+","+margin+")");
-            //mainTransform = d3.transform().translate(margin,margin);
-            
-
-            /*
-
-            var cell_nodes = g.selectAll('.node')
-              .data(data)
-              .enter().append('circle')
-              .attr("id", function(d){return "g"+d.order;})
-              .attr('class', 'node')
-              .attr("cid",function(d){return d._id;})
-              .attr('cx', function(d){return mainXscale(d.x);})
-              .attr('cy', function(d){return mainYscale(d.y);})
-              .attr('r', defaultR)
-              .style('fill',   defaultNodeColor )
-              .style("fill-opacity",0.5)
-              .style("stroke","white")
-              .style("stroke-width","0.5");
-
-
-            */
             renderNodes()
             //data=null;
 
@@ -673,11 +752,11 @@
                   var i = datalength-1;
 
                   var gid = "g"+data[i]["order"];
-                  var x = mainXscale(data[i].x);
-                  var y = mainYscale(data[i].y);
+                  var x = mainXscale(data[i].x)+margin;
+                  var y = mainYscale(data[i].y)+margin;
                   data.pop();
 
-                  d3.select("#maing").append("circle").attr("id",gid).attr("class","node").attr("cx",x).attr("cy",y).attr("r",defaultR)
+                  scMainSvg.append("circle").attr("id",gid).attr("class","node").attr("cx",x).attr("cy",y).attr("r",defaultR)
                       .style("fill",defaultNodeColor)
                       .style("fill-opacity",0.5)
                       .style("stroke-width",0.5)
@@ -720,7 +799,7 @@
 
               var coords =[];
               var selectedline =d3.line();
-              var ori_coords=[];
+              //var ori_coords=[];
 
               var cell_nodes=d3.selectAll(".node");
 
@@ -742,12 +821,13 @@
                 if(coords.length>1){
 
 
-                  g.append("path").attr("class",'node_draw_path').attr( "d",selectedline([coords[coords.length-2],   coords[coords.length-1] ]));
+                  scMainSvg.append("path").attr("class",'node_draw_path').attr( "d",selectedline([coords[coords.length-2],   coords[coords.length-1] ]));
 
                   if (isdone) {
 
                     coords = coords.concat([coords[0]]);
 
+                    /*
                     ori_coords=[];
                     if(mainTransform!==undefined){
                       for(var ii in coords){
@@ -771,11 +851,11 @@
                         }
                     }
 
+                    */
 
+                    scMainSvg.append("path").attr("class","node_done_path").attr("d", selectedline(coords ) );
 
-                    g.append("path").attr("class","node_done_path").attr("d", selectedline(coords ) );
-
-                    g.selectAll(".node_draw_path").remove();
+                    scMainSvg.selectAll(".node_draw_path").remove();
 
 
                     cell_nodes.each(function(d, i) {
@@ -827,8 +907,8 @@
                 //tempcoord[0] = tempcoord[0]-gtranslate[0];
                 //tempcoord[1] = tempcoord[1]-gtranslate[1];
                 
-                tempcoord[0] = tempcoord[0]-margin;
-                tempcoord[1] = tempcoord[1]-margin;
+                //tempcoord[0] = tempcoord[0]-margin;
+                //tempcoord[1] = tempcoord[1]-margin;
                 if(coords.length>0){
                   let lastcoord = coords[coords.length-1];
                   if(Math.abs(lastcoord[0]-tempcoord[0])+ Math.abs(lastcoord[1]-tempcoord[1]) >2){
@@ -856,17 +936,131 @@
             }
            
 
-              
+            //drag end;
 
 
-              
+            //
+
+            scMainSvg.on("dblclick",function(){
+
+                if(appModel==="editor"){
+
+                    var coordinates = [0, 0];
+                    coordinates = d3.mouse(this);
+                    var x = coordinates[0];
+                    var y = coordinates[1];
+
+
+                    x = x-margin;
+                    y = y-margin;
+
+                    /*
+                    if(mainTransform!==undefined){
+                      x = mainTransform.invertX(x);
+                      y = mainTransform.invertY(y);
+
+                    }
+                    */
+                    var x2 = mainXscale.invert(x);
+                    var y2 =  mainYscale.invert(y);
+
+
+
+
+                    $("#defaultModal").modal("show");
+
+
+                    $("#defaultModal").find(".modal-title").html("Cluster Editor");
+
+                     
+
+                    var modalbody = $("#defaultModal").find(".modal-body");
+
+                    //alert(JSON.stringify(clstrs))
+                    /*
+                    var optsstr="";
+                    for(var x in clstrs){
+                      for(var i in clstrs[x]){
+
+                          var temp = clstrs[x][i];
+                          var islabel = temp["label"];
+                          if(islabel === false){
+
+                            optsstr+="<option value='"+temp["_id"]+"'>"+temp["clstrName"]+"</option>"
+                          }
+
+
+                      }
+                    }
+                    */
+
+                    var tempdata = []
+                    for(var x in clstrs){
+                      for(var i in clstrs[x]){
+
+                          var temp = clstrs[x][i];
+                          var islabel = temp["label"];
+                          if(islabel === false){
+
+                            tempdata.push(temp);
+                          }
+
+
+                      }
+                    }
+
+                   
+                    modalbody.html("<div><select name='saveclstrposselect'></select> <button name='setclstrlabelhere' class='btn btn-primary btn-sm'>save</button>&nbsp;&nbsp;<button name='deleteclstrlabel' class='btn btn-danger btn-sm'>delete</button></div>");
+
+                    modalbody.find("[name='saveclstrposselect']").selectize({
+                      options:tempdata,
+                      valueField:"_id",
+                      labelField:"clstrName",
+                      searchField:"clstrName",
+                      render: {
+                          item: function(item, escape) {
+
+                            return "<div>"+item.clstrName+"</div>";
+                          },
+                          option: function(item, escape) {
+                               
+                              
+                               
+
+                              return '<div><span class="label">'+item.clstrName+'</span>&nbsp;  (<span style="color:steelblue;">'+item.clstrType+'</span>)</div>' ;
+                          }
+                          
+                      },
+
+
+
+
+                    });
+
+
+                    modalbody.find("[name='deleteclstrlabel']").click(function(){
+                      
+
+
+                    });
+
+                    modalbody.find("[name='setclstrlabelhere']").click(function(){
+
+
+                      
+                    });
+
+                }
+                  
+                  
+            })
 
               
     
 
 
 
-          }
+          }//renderactions
 
 
 
@@ -891,7 +1085,53 @@
 
 
           
+          function renderGenesearchVioPlot(div){
+            
+            startLoadingDiv(div)
 
+            setTimeout(function(){
+
+              /*
+                var count=1500;
+
+                while(count >0 && data.length>0){
+                  count-=1;
+                  var datalength = data.length;
+                  var i = datalength-1;
+
+                  var gid = "g"+data[i]["order"];
+                  var x = mainXscale(data[i].x);
+                  var y = mainYscale(data[i].y);
+                  data.pop();
+
+                  d3.select("#maing").append("circle").attr("id",gid).attr("class","node").attr("cx",x).attr("cy",y).attr("r",defaultR)
+                      .style("fill",defaultNodeColor)
+                      .style("fill-opacity",0.5)
+                      .style("stroke-width",0.5)
+                      .style("stroke","white");
+
+                  if(data.length>0){
+
+
+                    renderNodes();
+                  }else{
+
+                    renderLabel();
+                    renderActions();
+                    endLoading2();
+
+                  }
+
+                }
+
+              */
+
+
+
+              },1)
+
+
+          }
 
           function execafterselected(selectednodes){
 
@@ -900,8 +1140,8 @@
             var savenodediv = targetdiv.find("[name='saveselectednode']");
             savenodediv.html("<div><span>Cluster Name :</span><div name='clstrnameinputdiv'></div></div>");
             savenodediv.append("<div><span>Cluster Type:</span><select class='form-control form-control-sm' name='clstrtypeinput'><option value='cellType'>Cell Type</option><option value='Patient'>Patient</option></select></div>");
-            savenodediv.append("<div><span>Comment:</span><textarea  type='text' class='form-control form-control-sm' name='clstrcommentinput'></textarea></div>");
-            savenodediv.append("<button name='saveclstrbtn'>Save</button>");
+            savenodediv.append("<div><span>Comment:</span><textarea  type='text' class='form-control form-control-sm' name='clstrcommentinput'></textarea></div><div style='height:5px;'></div>");
+            savenodediv.append("<button name='saveclstrbtn' class='btn btn-primary btn-sm'>Save</button>");
 
             /*
             var clstrtype = savenodediv.find("[name='clstrtypeinput']").val();
@@ -928,8 +1168,8 @@
                 if(name === ""){
                    alert("input a name of cluster");
                 }else{
-
-
+                    alert(name)
+                    /*
                     $.ajax({
                       url:"/savecluster",
                       data:{"sampleid":sampleObjectId,name:name,type:type,comment:comment,"cells":selectednodes.join(",")},
@@ -956,6 +1196,7 @@
 
 
                     })
+                    */
 
                 }
 
@@ -964,22 +1205,78 @@
 
             function renderclusternameinput(clstr,div){
                 
-                if(clstr==="cellType"){
-                    $("[name='clstrnameinputdiv']").html("<input  type='text' class='form-control form-control-sm' name='clstrnameinput'>");
+                 
+                  $.ajax({
+                      url:"/getClusterClassification",
+                      data:{"clstrType":clstr},
+                      method:'post',
+                      dataType:"JSON",
+                      success:function(data){
+                        //endLoading2();
+                        data = data.clstrTypes;
+
+                        if(clstr==="cellType"){
 
 
+                        }
+                        renderClstrSelectMenu(data,$("[name='clstrnameinputdiv']"));
 
-                }else if(clstr == "Patient"){
+
+                      },error:function(){
+
+                        //errorLoading2();
+
+                      }
+
+                  })
 
 
-                    $("[name='clstrnameinputdiv']").html("<input  type='text' class='form-control form-control-sm' name='clstrnameinput'>");
-                }
+                  //$("[name='clstrnameinputdiv']").html("<input  type='text' class='form-control form-control-sm' name='clstrnameinput'>");
                 
 
             }
 
 
           }
+
+
+          function renderClstrSelectMenu(data,div){
+            
+            div.html("<select  type='text' name='clstrnameinput'><select>");
+            div.find("[name='clstrnameinput']").selectize({
+
+                options:data,
+                valueField:"_id",
+                labelField:"_id",
+                searchField:"_id",
+                render: {
+                    item: function(item, escape) {
+
+                      return "<div>"+item._id+"</div>";
+                    },
+                    option: function(item, escape) {
+                         
+                        var path = item.path;
+
+                        path.push("<span style='color:green;'>"+item._id+"</span>");
+
+                        var path = path.join("->");
+
+                          return '<div><span class="label" style="color:steelblue;">'+item._id+'</span><br><span class="caption">' + path + '</span></div>';
+                    }
+                    
+                },
+
+
+            })
+
+
+
+          }
+
+
+
+
 
           function startLoading(){
 
@@ -1039,7 +1336,30 @@
           }
 
 
+          function startLoadingDiv(div){
 
+
+              var loadingstr='<div class="h-100" style="display: flex;justify-content: center;align-items: center;vertical-align: middle;"><div class="loader"><div class="dot dot1"><i></i></div><div class="dot dot2"><i></i></div><div class="dot dot3"><i></i></div><div class="dot dot4"><i></i></div><div class="dot dot5"><i></i></div><div class="dot dot6"><i></i></div><div class="dot dot7"><i></i></div><div class="dot dot8"><i></i></div><div class="dot dot9"><i></i></div></div></div>'
+
+
+
+              div.html(loadingstr);
+ 
+          }
+
+          function endLoadingDiv(div){
+
+
+              div.html("");
+
+
+          }
+
+
+          function errorLoadingDiv(div){
+
+              div.html("server error");
+          }
 
 
 

@@ -11,5 +11,6 @@ urlpatterns = [
 	path("getClusterCellids",views.getClusterCellids,name='getClusterCellids'),
 	path("savecluster",views.savecluster,name="savecluster"),
 	path("queryClstrCellsByCid",views.queryClstrCellsByCid,name="queryClstrCellsByCid"),
-	path("getSampleLists",views.getSampleLists,name="getSampleLists")
+	path("getSampleLists",views.getSampleLists,name="getSampleLists"),
+	path("getClusterClassification",views.getClusterClassification,name="getClusterClassification"),
 ]
