@@ -97,13 +97,13 @@ def savecluster(request):
 
 
 
-def queryClstrCellsByCid(request):
+def queryClstrCellsAndLabelByCid(request):
 
 	cid = request.POST.get("cid");
-	cellids = service.queryClstrCellsByCid(cid);
+	data = service.queryClstrCellsAndLabelByCid(cid);
 
 
-	return JsonResponse({"cellids":cellids});
+	return JsonResponse(data);
 
 
 
@@ -126,3 +126,27 @@ def getClusterClassification(request):
 	data = service.getClusterClassification(clstrType);
 
 	return JsonResponse({"clstrTypes":data})
+
+
+def updatecluster(request):
+	target = request.POST.get("target");
+	clstrid = request.POST.get("clstrid");
+
+	if target == "POS":
+		x = request.POST.get("x");
+		y = request.POST.get("y");
+		
+		res = service.updateClusterPostition(clstrid,x,y);
+	elif target =="NAME":
+		newname = request.POST.get("name");
+		res = service.updateClusterName(clstrid,newname);
+
+	return JsonResponse({"res":res});
+
+
+def deleteCluster(request):
+	clstrid = request.POST.get("clstrid");
+	res = service.deleteCluster(clstrid);
+
+	return JsonResponse({"res":res});
+

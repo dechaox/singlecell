@@ -10,7 +10,10 @@ urlpatterns = [
 	path("genelistSearch",views.genelistSearch,name='genelistSearch'),
 	path("getClusterCellids",views.getClusterCellids,name='getClusterCellids'),
 	path("savecluster",views.savecluster,name="savecluster"),
-	path("queryClstrCellsByCid",views.queryClstrCellsByCid,name="queryClstrCellsByCid"),
+	path("queryClstrCellsAndLabelByCid",views.queryClstrCellsAndLabelByCid,name="queryClstrCellsAndLabelByCid"),
 	path("getSampleLists",views.getSampleLists,name="getSampleLists"),
 	path("getClusterClassification",views.getClusterClassification,name="getClusterClassification"),
+	path("updatecluster",views.updatecluster,name="updatecluster"),
+	path("deleteCluster",views.deleteCluster,name="deleteCluster"),
+	
 ]

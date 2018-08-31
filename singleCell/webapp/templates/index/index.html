@@ -201,7 +201,7 @@
             var mainYscale;
             var mainTransform;
             var selectednodes;
-
+          var margin;
 
           //startLoading();
 
@@ -288,11 +288,13 @@
 
           function renderclstrtable(clstrlist,div){
             
-            div.html("<table class='table table-sm table-hover'><tbody></tbody></table>");
+            div.html("<table class='table table-sm table-hover'><tbody></tbody></table><hr></hr><div id='calculationdiv'></div>");
             clearClusterState();
 
             for(var i in clstrlist){
               div.find("tbody").append("<tr><td colored='F' cid='"+clstrlist[i]["_id"]+"' ischecked='F'><i class='far fa-square' style='color: steelblue;cursor:pointer;'></i></td><td  cname='"+clstrlist[i]["clstrName"]+"' style='color:"+clstrlist[i]["color"]+";cursor:default;'>"+clstrlist[i]["clstrName"]+"</td></tr>")
+
+
 
 
             }
@@ -312,7 +314,7 @@
 
                 if(colored ==="F"){
                   $.ajax({
-                      url:"/queryClstrCellsByCid",
+                      url:"/queryClstrCellsAndLabelByCid",
                       data:{"cid":cid},
                       method:"post",
                       dataType:"JSON",
@@ -328,6 +330,20 @@
                         thisdiv.attr("colored","T");
                         thisdiv.html("<i class='far fa-check-square' style='color: steelblue;cursor:pointer;'></i>");
                         thisdiv.attr("ischecked","T");
+
+                        var islabeled = res.labeled;
+
+                        if(islabeled  === true){
+                          var x2 = res["x"];
+                          
+                          var y2 = res["y"];
+                          var name = res["name"];
+                           
+                          scMainSvg.append("text").attr("class","clstrlabel").attr("name","clstr"+cid).text(name).attr("x",mainXscale(x2)+margin).attr("y",mainYscale(y2)+margin);
+                        }
+
+
+
                       },
                       error:function(){
 
@@ -347,6 +363,7 @@
 
                   thisdiv.html("<i class='far fa-check-square' style='color: steelblue;cursor:pointer;'></i>");
                   thisdiv.attr("ischecked","T");
+                  $("[name='clstr"+cid+"']").show();
 
                 }
 
@@ -357,6 +374,7 @@
                   thisdiv.html("<i class='far fa-square' style='color: steelblue;cursor:pointer;'></i>");
 
                   thisdiv.attr("ischecked","F");
+                  $("[name='clstr"+cid+"']").hide();
               }
 
               
@@ -365,7 +383,7 @@
 
 
 
-          }
+          }//renderclstrtable
 
           function clearAllNodes(){
 
@@ -379,7 +397,7 @@
           function clearClusterState(){
 
             $(".node[clstr]").css("fill",defaultNodeColor).removeAttr("clstr");
-
+            $(".clstrlabel").remove();
 
           }
 
@@ -687,7 +705,7 @@
 
             
 
-            var margin = 20;
+            margin = 20;
             var size = Math.floor(d3.min([width,height]));
             size = size- 2*margin ;
             
@@ -790,8 +808,15 @@
             //render label;
             function renderLabel(){
 
-                var labeldt =[];
+                /*
+                d3.selectAll(".clstrlabel").remove();
+                $.ajax({
 
+
+
+
+                })
+                */
             }
             
             function renderActions(){
@@ -816,6 +841,9 @@
                   
                 $("[name='sellectcelldiv']").html("Select Cells");
 
+                //renderfunction
+                $("#calculationdiv").html("");
+
               }
               var drawPath = function(isdone) {
                 if(coords.length>1){
@@ -826,32 +854,6 @@
                   if (isdone) {
 
                     coords = coords.concat([coords[0]]);
-
-                    /*
-                    ori_coords=[];
-                    if(mainTransform!==undefined){
-                      for(var ii in coords){
-                        var tempx = mainTransform.invertX(coords[ii][0]);
-                        var tempy = mainTransform.invertY(coords[ii][1]);
-                        var tempx = mainXscale.invert(tempx);
-                        var tempy = mainYscale.invert(tempy);
-                        tempx=tempx+margin;
-                        tempy=tempy+margin;
-                        ori_coords.push([tempx,tempy]);
-
-                      }
-                    }else{
-
-                        for(var ii in coords){
-                                var tempx = mainXscale.invert(coords[ii][0]);
-                                var tempy = mainYscale.invert(coords[ii][1]);
-                                tempx=tempx+margin;
-                                tempy=tempy+margin;
-                                ori_coords.push([tempx,tempy]);
-                        }
-                    }
-
-                    */
 
                     scMainSvg.append("path").attr("class","node_done_path").attr("d", selectedline(coords ) );
 
@@ -994,7 +996,8 @@
                     }
                     */
 
-                    var tempdata = []
+                    var tempdata = [];
+                    var tempdata2={};
                     for(var x in clstrs){
                       for(var i in clstrs[x]){
 
@@ -1003,16 +1006,19 @@
                           if(islabel === false){
 
                             tempdata.push(temp);
+                            tempdata2[temp["_id"]]=temp["clstrName"];
                           }
 
 
                       }
                     }
+                    
+
 
                    
-                    modalbody.html("<div><select name='saveclstrposselect'></select> <button name='setclstrlabelhere' class='btn btn-primary btn-sm'>save</button>&nbsp;&nbsp;<button name='deleteclstrlabel' class='btn btn-danger btn-sm'>delete</button></div>");
+                    modalbody.html("<div><select name='saveclstrposselect'></select> <button name='setclstrlabelhere' class='btn btn-primary btn-sm'>save</button>&nbsp;&nbsp;<button name='editclstrlabel' class='btn btn-warning btn-sm'>edit</button>&nbsp;&nbsp;<button name='deleteclstrlabel' class='btn btn-danger btn-sm'>delete</button></div>");
 
-                    modalbody.find("[name='saveclstrposselect']").selectize({
+                    var $savemodelselectize = modalbody.find("[name='saveclstrposselect']").selectize({
                       options:tempdata,
                       valueField:"_id",
                       labelField:"clstrName",
@@ -1036,16 +1042,108 @@
 
 
                     });
-
+                    var savemodelselectize = $savemodelselectize[0].selectize;
 
                     modalbody.find("[name='deleteclstrlabel']").click(function(){
-                      
 
+                      var clstrid = modalbody.find("[name='saveclstrposselect']").val();
+                      $.ajax({
+                          url:"/deleteCluster",
+                          data:{ "clstrid":clstrid },
+                          method:"post",
+                          dataType:"JSON",
+                          success:function(data){
+                            
+                             $("#defaultModal").modal("hide");
+
+                             $("[name='clstr"+clstrid+"']").remove();
+                            
+  
+                          },
+                          error:function(){
+
+
+                              alert("save error")
+                          }
+
+
+
+                      }) 
 
                     });
 
                     modalbody.find("[name='setclstrlabelhere']").click(function(){
+                      var clstrid = modalbody.find("[name='saveclstrposselect']").val();
+                      var clstrText = tempdata2[clstrid];
+                      
+                       
+                      $.ajax({
+                          url:"/updatecluster",
+                          data:{"target":"POS","clstrid":clstrid,"x":Number(x2),"y":Number(y2)},
+                          method:"post",
+                          dataType:"JSON",
+                          success:function(data){
+                            
+                             $("#defaultModal").modal("hide");
 
+                              scMainSvg.append("text").attr("class","clstrlabel").attr("name","clstr"+clstrid).text(clstrText).attr("x",mainXscale(x2)+margin).attr("y",mainYscale(y2)+margin);
+  
+                          },
+                          error:function(){
+
+
+                              alert("save error")
+                          }
+
+
+
+                      }) 
+
+                      
+
+                      
+                    });
+
+                    modalbody.find("[name='editclstrlabel']").click(function(){
+
+                      var clstrid = modalbody.find("[name='saveclstrposselect']").val();
+                      var clstrText = tempdata2[clstrid];
+
+                      modalbody.find("[name='newnameinputdiv']").remove();
+
+                      modalbody.append("<div name='newnameinputdiv'><span>new cluster name:</span><input name='newnameinput' class='form-control' type='text' ><a class='btn btn-sm btn-primary savebtn'>save</a></div>")
+
+                      modalbody.find("[name='newnameinputdiv']").find(".savebtn").click(function(){
+
+
+                          var newname = modalbody.find("[name='newnameinputdiv']").find("[name='newnameinput']").val();
+                          newname = newname.trim();
+                          if(newname.length>0){
+                              $.ajax({
+                                  url:"/updatecluster",
+                                  data:{"target":"NAME","clstrid":clstrid,"name":newname},
+                                  method:"post",
+                                  dataType:"JSON",
+                                  success:function(data){
+                                    
+                                     $("#defaultModal").modal("hide");
+                                      $("[name='clstr"+clstrid+"']").text(newname);
+                                      
+          
+                                  },
+                                  error:function(){
+
+
+                                      alert("save error")
+                                  }
+
+
+
+                              }) 
+
+                          }
+
+                      })
 
                       
                     });
@@ -1135,11 +1233,15 @@
 
           function execafterselected(selectednodes){
 
+            renderCalculation(selectednodes);
+
+
             var targetdiv = $("[name='sellectcelldiv']");
             targetdiv.html("<span style='color:steelblue;'>"+selectednodes.length +"</span> cells be selected<br><div name='saveselectednode'></div>");
             var savenodediv = targetdiv.find("[name='saveselectednode']");
             savenodediv.html("<div><span>Cluster Name :</span><div name='clstrnameinputdiv'></div></div>");
             savenodediv.append("<div><span>Cluster Type:</span><select class='form-control form-control-sm' name='clstrtypeinput'><option value='cellType'>Cell Type</option><option value='Patient'>Patient</option></select></div>");
+            //savenodediv.append("<div><span>Mark Genes:</span><textarea name='markgenestextarea'></textarea></div>");
             savenodediv.append("<div><span>Comment:</span><textarea  type='text' class='form-control form-control-sm' name='clstrcommentinput'></textarea></div><div style='height:5px;'></div>");
             savenodediv.append("<button name='saveclstrbtn' class='btn btn-primary btn-sm'>Save</button>");
 
@@ -1161,7 +1263,7 @@
                 var name = savenodediv.find("[name='clstrnameinput']").val();
                 var type = savenodediv.find("[name='clstrtypeinput']").val();
                 var comment = savenodediv.find("[name='clstrcommentinput']").val();
-
+                //var markgenes = savenodediv.find("[name='markgenestextarea']").val();
 
                 name = name.trim();
 
@@ -1202,6 +1304,12 @@
 
 
             })
+
+
+
+            //render contrast
+            
+
 
             function renderclusternameinput(clstr,div){
                 
@@ -1275,7 +1383,14 @@
           }
 
 
+          function renderCalculation(selectednodes){
 
+
+
+
+            $("#calculationdiv").html("<button class='btn btn-default btn-sm' name='contrastbtn'> Contrast </button>");
+
+          }
 
 
           function startLoading(){

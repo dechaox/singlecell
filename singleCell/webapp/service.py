@@ -85,7 +85,7 @@ def getExprdataByGene(sampleid,gene):
 		if countexpr[i] >0:
 			res.append(i);
 
-	
+
 	return res;
 
 
@@ -146,11 +146,19 @@ def savecluster(sampleid,name,ctype,cells,comment):
 
 
 
-def queryClstrCellsByCid(cid):
+def queryClstrCellsAndLabelByCid(cid):
 	cid = ObjectId(cid);
-	cellids = db.cluster.find_one({"_id":cid},{"cells":1})["cells"];
+	clstr = db.cluster.find_one({"_id":cid},{"cells":1,"label":1,"x":1,"y":1,"clstrName":1});
+	
+	res=dict();
+	res["cellids"]=clstr["cells"];
+	res["name"] = clstr["clstrName"];
+	res["labeled"]=clstr["label"];
+	res["x"] = clstr["x"];
+	res["y"]= clstr["y"]
+	
 
-	return cellids;
+	return res;
 
 
 
@@ -172,11 +180,18 @@ def getClusterClassification(clstrtype):
 
 
 
+def updateClusterPostition(clstrid,x,y):
+	res = db.cluster.update_one({"_id":ObjectId(clstrid)},{"$set":{"x":float(x),"y":float(y),"label":True}});
+	return "success";
 
+def updateClusterName(clstrid,name):
+	res = db.cluster.update_one({"_id":ObjectId(clstrid)},{"$set":{"clstrName":name}});
+	return "success";
 
+def deleteCluster(clstrid):
+	res = db.cluster.remove({"_id":ObjectId(clstrid)});
 
-
-
+	return "success";
 
 
 
