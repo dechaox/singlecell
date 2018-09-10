@@ -1,0 +1,3 @@
+{_id:"admin",password:"admin123",role:"admin",permission:["*"]}
+
+{_id:"viewer",password:"viewer123",role:"viewer",permission:["*"]}
