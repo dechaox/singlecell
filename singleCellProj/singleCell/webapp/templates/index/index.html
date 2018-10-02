@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    
     <title>Single Cell Explorer</title>    
     {% include  "common/libx1.html"  %}
   </head>
@@ -125,40 +128,35 @@
     </div>
 
 
-    <!--div class="modal " id="LoadingModal" tabindex="-1" role="dialog" aria-hidden="true" style="background: none;border: 0;"  > 
-      <div class="modal-dialog" role="document">
-        <div class="modal-content" style='background: none;'>
-          <div class="modal-header">
-            <h5 class="modal-title">Single Cell Samples</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+     
+      <div id="dragablediv" class='shadow mb-5 bg-white rounded' style="width: 600px;position: absolute;top: 100px;right: 30px;display: none;">
+        <div class='card'>
+          <div name="dragabledivheader" class="card-header" style='cursor:move;'>
+              <span name='dragablepaneltitle' style='color:steelblue;font-weight: bold;font-size: 20px;'></span>
+
+              <button type="button" class="close" name='closedragablepanel'>
+                <span>&times;</span>
+              </button>
+
           </div>
-          <div class="modal-body" >
+
+          <div class="card-body">
+            
               
-                
-              </div>
+
           </div>
-          <div class="modal-footer">
-             
-          </div>
+          
+
         </div>
       </div>
-    </div-->
+    
+
+
+     
 
 
 
-
-
-
-
-
-
-
-
-
-
-    <div class="modal " id="defaultModal" tabindex="-1" role="dialog" aria-hidden="true"  > 
+    <div class="modal" id="defaultModal" tabindex="-1" role="dialog" aria-hidden="true"  > 
       <div class="modal-dialog" role="document">
         <div class="modal-content" >
           <div class="modal-header">
@@ -187,7 +185,7 @@
       $(function() {
           //index model display
           //$('#sampleListModal').modal("show");
-
+          initComponents();
           renderLoginPanel();
 
            
@@ -204,6 +202,9 @@
             var mainTransform;
             var selectednodes;
           var margin;
+
+
+          var clusterTable;
 
 
 
@@ -232,7 +233,7 @@
             //sessionStorage.setItem('username', 'test123');
             
 
-            if( (user === null || user ==="") || (timediff>100000) ||  isNaN(timediff)  ){
+            if( (user === null || user ==="") || (timediff>1000000) ||  isNaN(timediff)  ){
 
               //do render
               
@@ -369,7 +370,7 @@
                       var tsnedt = data.tsneData;
                       clstrs = data.clstr;
 
-                      renderInfoPanel("#infopanel");
+                      
                       renderTsneMap(tsnedt,"#mainpanel");
 
                      
@@ -389,101 +390,408 @@
 
 
           }
-          
+
+
+
+
+          function reloadclstrtable(clstrtable,clstrtype){
+              var clstrdata = clstrs[clstrtype];
+            
+              var tabledata=[];
+              for(var i in clstrdata){
+
+                var marks=[];
+                if("marks" in clstrdata[i]){
+                  marks=clstrdata[i]["marks"]
+                }
+                tabledata.push({"cid":clstrdata[i]["_id"],"prerender":clstrdata[i]["prerender"] ,"name":clstrdata[i]["clstrName"],"marks":marks,"color":clstrdata[i]["color"]})
+              }
+
+              clstrtable.clear();
+              clstrtable.rows.add(tabledata);
+              clstrtable.draw();
+
+
+          }
+
 
           function renderclstrtable(div,clstrtype){
-            
-            //alert(JSON.stringify(clstrs))
-            //style='border-color:blue;border-style: solid;overflow-x:scroll;'
-            div.html("<br><div style='overflow-x:auto;'><table class='table table-striped display table-bordered' name='clusterdetailtable' style='width:100%;font-size:12px;' setlabelname='' setlabelid=''><thead style='display :none;'></thead><tbody> </tbody> </table></div>");
-            var tablediv = div.find("[name='clusterdetailtable']");
-            
 
             var userrole = sessionStorage.getItem("userrole");
 
 
-            //alert(JSON.stringify(clstrs))
-            //prerender
-            //check, name,marks,action
-            for(var x in clstrs){
-              for(var i in clstrs[x]){
+            var clstrdata = clstrs[clstrtype];
+            
+            var tabledata=[];
+            for(var i in clstrdata){
 
-                
-
-                var temp = clstrs[x][i];
-
-                var prerenderTF = "F";
-                if(temp["prerender"]===true ){
-                  prerenderTF='T';
-                }
-
-
-                tempstr ="<tr clstrtype='"+x+"' precheck='"+prerenderTF+"'>"
-                tempstr+="<td colored='F' cid='"+temp["_id"]+"' ischecked='F'><i class='far fa-square' style='color: steelblue;cursor:pointer;'></i></td>"
-                tempstr+="<td cname='"+temp["clstrName"]+"' style='color:"+temp["color"]+";cursor:default;'>"+temp["clstrName"]+"</td>";
-                
-                if("marks" in temp){
-
-                    var markslist = temp["marks"];
-
-                    var markstr=""
-                    for(var g in markslist){
-                      var gg=markslist[g];
-
-                      markstr+="<span name='fitedgene' style='cursor:pointer;'>"+g+"</span>,"
-
-                    }
-                    tempstr+="<td name='marks'>"+markstr+"</td>";
-                    markstr=null;
-
-                }else{
-
-
-                    tempstr+="<td name='marks'> </td>";
-
-                }
-
-                
-                if(userrole==="admin"){
-
-                  tempstr+="<td name='action'  >"+ "<button class='btn btn-sm btn-warning' name='editclstr' style='font-size:11px;display:inline-block;color:white;'>Edit</button>&nbsp;<button class='btn btn-sm btn-danger' name='deleteclstr' style='font-size:11px;display:inline-block;'>Delete</button>&nbsp;<button class='btn btn-sm btn-primary' name='labeltoclstr' style='font-size:11px;display:inline-block;'>Set Label</button>"+"</td>";
-                }
-
-                
-                tempstr +="</tr>"
-                div.find("tbody").append(tempstr);
-
+              var marks=[];
+              if("marks" in clstrdata[i]){
+                marks=clstrdata[i]["marks"]
               }
+              tabledata.push({"cid":clstrdata[i]["_id"],"prerender":clstrdata[i]["prerender"] ,"name":clstrdata[i]["clstrName"],"marks":marks,"color":clstrdata[i]["color"]})
             }
 
 
-            div.find("tbody").find("[clstrtype]").hide();
-            div.find("[clstrtype='"+clstrtype+"']").show();
+            div.html("<br><div style='overflow-x:auto;'><table class='table display' name='clusterdetailtable' style='width:100%;font-size:12px;' setlabelname='' setlabelid=''><thead style='display :none;'> </thead><tbody> </tbody> </table></div>");
+            var datatable = div.find("[name='clusterdetailtable']").DataTable( {
+                "searching": false,
+                "info": false,
+                "ordering": false,
+                "paging": false,
+                "scrollX": true,
+                 "columns": [
+                    { data: "prerender", title: "check",width:"20px"},
+                    { data: "name", title: "name"},
+                    { data: "marks", title: "marks"},
+                    { data: "cid", title: "more"},
+                    
+             
+                ],
+                "data":tabledata,
+                "columnDefs": [
+                    {
+                        
+                        "render": function ( data, type, row ) {
+
+                            
+                            var precheck ="F";
+                            if(data===true){
+                              
+                              precheck="T";
+                            }
+                            return "<span style='cursor:pointer;color:steelblue;' ischecked='F' precheck='"+precheck+"' cid='"+row.cid+"'><i class='far fa-square'></i></span>";
+                        },
+                         
+                        "targets": 0
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
 
 
-            div.find("[name='editclstr']").click(function(){
+                            return "<span style='color:"+row.color+"'>"+data+"</span>  ";
+                        },
+                        "targets": 1
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+
+                            var renderstrarr=[];
+                            var index=0;
+                            for(var i in data){
+                              if(index >2){
+                                break;
+                              }
+                              index+=1;
+                              renderstrarr.push("<span name='tbgbtn' style='cursor:pointer;'>"+data[i]+"</span>");
+                            }
+                            return "<div>"+renderstrarr.join(" , ")+"</div>"
+
+                        },
+                        "targets": 2
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+
+                            return "<i style='color:#07b3de;cursor:pointer;font-size:13px;' name='expandbtn' value='F'><i class='fas fa-caret-down'></i></i>";
+                        },
+                         
+                        "targets": 3
+                    },
+
+                ]
+
+
+            });
+
+            clusterTable = datatable;
+
+            div.find("[name='clusterdetailtable']").on("click","[name='expandbtn']",function(){
+
+                var thisdiv = $(this);
+                var thisval = $(this).attr("value");
+                var tr = $(this).parent().closest('tr');
+                var row = datatable.row( tr );
+                var data = row.data();
+                var cid = data.cid
+
+                if(thisval ==="F"){
+
+
+                    div.find("[name='clusterdetailtable']").find("[name='expandbtn']").each(function(){
+
+                        var thisvalue = $(this).attr("value");
+                        if(thisvalue==="T"){
+                            $(this).trigger("click");
+
+                        }
+
+                    })
+
+
+                    var renderstr="<div clstrid='"+cid+"'>";
+
+                    renderstr+="<div><button class='btn btn-sm btn-primary' name='contrastglobal' style='font-size:11px;'>Contrast</button></div>";
+
+                    
+                    var marks = data.marks;
+
+                    var markarr=[];
+                    for(var i in marks){
+                      markarr.push("<span name='tbgbtn' style='cursor:pointer;'>"+marks[i]+"</span>");
+                    }
+
+                    renderstr+="<div name='markgenesall'>"
+
+                    if(markarr.length>0){
+
+                        renderstr+="<hr></hr><div>Mark Genes:</div>";
+                        renderstr+="<div>"+markarr.join(" , ")+"</div>";
+
+                    }
+
+                    renderstr+="</div>"
+
+                    
+                    if(userrole==="admin"){
+
+
+                        renderstr+="<hr></hr><div><button class='btn btn-sm btn-warning' name='editclstr' style='font-size:11px;display:inline-block;color:white;'><i class='fas fa-edit'></i></button>&nbsp;<button class='btn btn-sm btn-danger' name='deleteclstr' style='font-size:11px;display:inline-block;'><i class='fas fa-trash-alt'></i></button>&nbsp;<button class='btn btn-sm btn-primary' name='labeltoclstr' style='font-size:11px;display:inline-block;'>Set Label</button></div>"
+                    }
+
+                    renderstr+='</div>';
+
+                    row.child( renderstr ).show();
+                    thisdiv.attr("value","T");
+                    thisdiv.html("<i class='fas fa-caret-up'></i>");
+                }else{
+
+
+                    row.child( "" ).hide();
+                    thisdiv.attr("value","F");
+                    thisdiv.html("<i class='fas fa-caret-down'></i>");
+                }
 
 
 
-                var thistr = $(this).parent().parent();
+            })
+
+            div.find("[name='clusterdetailtable']").on("click","[ischecked]",function(){
                 
-                var clstrid =thistr.find("[cid]").attr("cid");
+                var thisdiv = $(this);
+                var checked = thisdiv.attr("ischecked");
+                var thisrow=thisdiv.parent().closest("tr");
+                var dt = datatable.row(thisrow).data();
+                var color = dt.color;
+                var cid = dt.cid;
+                var cname = dt.name;
+
+                if(checked === "F"){
+
+                   
+                    $.ajax({
+                        url:"/queryClstrCellsAndLabelByCid",
+                        data:{"cid":cid},
+                        method:"post",
+                        dataType:"JSON",
+                        
+                        success:function(res){
+
+                          var cellids = res.cellids;
+                          for(var i in cellids){
+
+                            d3.select("#g"+cellids[i]).attr("clstr",cname).style("fill",color);
+
+                          }
+                          
+                          thisdiv.html("<i class='far fa-check-square'></i>");
+                          thisdiv.attr("ischecked","T");
+
+                          var islabeled = res.labeled;
+
+                          if(islabeled  === true){
+                            var x2 = res["x"];
+                            
+                            var y2 = res["y"];
+                            var name = res["name"];
+                             
+                            scMainSvg.append("text").attr("class","clstrlabel").attr("name","clstr"+cid).text(name).attr("x",mainXscale(x2)+margin).attr("y",mainYscale(y2)+margin);
+                          }
+
+
+                        },
+                        error:function(){
+
+                          alert("error")
+
+                        }
+
+
+                    })
+
+
+                }else if(checked === "T"){
+
+                    $(".node[clstr='"+cname+"']").css("fill",defaultNodeColor).removeAttr("clstr");
+                    thisdiv.html("<i class='far fa-square'></i>");
+
+                    thisdiv.attr("ischecked","F");
+                    $("[name='clstr"+cid+"']").remove();
+                }
+
                 
-                var cname =thistr.find("[cname]").attr("cname");
-                var thismarks = [];
 
-                thistr.find("[name='marks']").find("[name='fitedgene']").each(function(){
 
-                  thismarks.push($(this).text());
+
+
+            });
+
+
+            div.find("[name='clusterdetailtable']").on("click","[name='editclstr']",function(){
+
+                var cid = $(this).closest("[clstrid]").attr("clstrid");
+                var thistr = div.find("[name='clusterdetailtable']").find("[cid='"+cid+"']").closest("tr");
+
+                var dt = datatable.row(thistr).data();
+                
+                var cname =dt.name;
+                var thismarks = dt.marks;
+                var prechecked = dt.prerender;
+                
+                rendereditmodal(cid,cname,thismarks,prechecked);
+
+            });
+
+
+            div.on("click","[name='labeltoclstr']",function(){
+            
+
+                appModel="editor";
+
+                var cid = $(this).closest("[clstrid]").attr("clstrid");
+                var thistr = div.find("[name='clusterdetailtable']").find("[cid='"+cid+"']").closest("tr");
+
+                var dt = datatable.row(thistr).data();
+                
+                var cname =dt.name;
+
+                div.find("[setlabelname]").attr("setlabelname",cname);
+
+                div.find("[setlabelid]").attr("setlabelid",cid);
+
+
+
+
+            })
+
+
+
+            div.on("click","[name='contrastglobal']",function(){
+                //targetdiv.find("[name='contrastbtn']").click(function(){
+
+                
+                var cid = $(this).closest("[clstrid]").attr("clstrid");
+                docontrast2(cid,"ALL");
+
+              
+            });
+
+
+
+            div.on("click","[name='deleteclstr']",function(){
+            
+                var cid = $(this).closest("[clstrid]").attr("clstrid");
+                var thistr = div.find("[name='clusterdetailtable']").find("[cid='"+cid+"']").closest("tr");
+
+                var dt = datatable.row(thistr).data();
+                
+                var cname =dt.name;
+
+                var thisrow = datatable.row(thistr);
+                
+
+                $("#defaultModal").find(".modal-title").html("");
+                //$("#defaultModal").find(".modal-footer").html("");
+
+                //$("#defaultModal").find(".modal-header").hide();
+
+
+                $("#defaultModal").find(".modal-body").html("<span>Delete Cluster <b>"+cname+"</b>?</span> &nbsp;&nbsp; <span class='btn btn-sm btn-danger' name='yes'>Yes</span>&nbsp;&nbsp;<span class='btn btn-sm btn-secondary' name='no'>No</span>")
+                $("#defaultModal").modal("show");
+
+
+                $("#defaultModal").find("[name='no']").click(function(){
+
+                    $("#defaultModal").modal("hide");
 
                 });
-                thismarks = thismarks.join(",");
+
+                
+                $("#defaultModal").find("[name='yes']").click(function(){
+                    $.ajax({
+                          url:"/deleteCluster",
+                          data:{ "clstrid":cid },
+                          method:"post",
+                          dataType:"JSON",
+                          success:function(data){
+                            
+                              $("#defaultModal").modal("hide");
+
+                              thisrow.remove().draw();
+                              
+                              $(".node[clstr='"+cname+"']").removeAttr("clstr").css("fill",defaultNodeColor);
+            
+                              $("#mainsvg").find("[name='clstr"+cid+"']").remove();
+
+                              
+                          },
+                          error:function(){
 
 
-                var prechecked = thistr.attr("precheck");
+                              alert("save error")
+                          }
 
 
 
+                    });
+                    
+
+                });
+
+                
+              
+            })
+
+
+
+            //disable
+            div.on("click","[name='contrastwithselected']",function(){
+
+
+                var cellids = selectednodes.join(",");
+                //docontrast2(cellids,"ALL");
+                var cid = $(this).parent().parent().find("[cid]").attr("cid");
+                docontrast(cellids,cid);
+
+
+
+            });
+
+
+
+            autocheckClusters(div.find("[name='clusterdetailtable']"));
+
+             
+            return datatable;
+
+
+          }
+
+
+          function rendereditmodal(clstrid,cname,thismarks,prechecked){
 
                 $("#defaultModal").modal("show");
 
@@ -498,16 +806,15 @@
                 modalbody.html("<div>New cluster name:</div><div name='newnameinputdiv' class='input-group'><input name='newnameinput' class='form-control' type='text' placeholder='"+cname+"'><div class='input-group-append'><span class='input-group-text btn savebtn'>save</span></div></div>");
 
                 var iconstr="<i class='far fa-square'></i>";
-                if(prechecked==="T"){
+                var precheckedstr="F";
+                if(prechecked===true){
                   iconstr="<i class='far fa-check-square'></i>";
+                  precheckedstr="T";
                 }
 
-                modalbody.append("<br><div><span style='color:steelblue;cursor:pointer;'  isprecheck='"+prechecked+"'>"+iconstr+"</span>&nbsp;&nbsp;<span>Precheck</span></div>");
+                modalbody.append("<br><div><span style='color:steelblue;cursor:pointer;'  isprecheck='"+precheckedstr+"'>"+iconstr+"</span>&nbsp;&nbsp;<span>Precheck</span></div>");
 
-                modalbody.append("<br><div><div>Gene Marks:</div><div name='marksinputdiv' class='input-group'><input name='marksinput' class='form-control' type='text' placeholder='"+thismarks+"'><div class='input-group-append'><span class='input-group-text btn markssavebtn'>save</span></div></div></div>");
-
-
-
+                modalbody.append("<br><div><div>Gene Marks:</div><div name='marksinputdiv' class='input-group'><input name='marksinput' class='form-control' type='text' value='"+thismarks.join(",")+"'></input><div class='input-group-append'><span class='input-group-text btn markssavebtn'>save</span></div></div></div>");
 
                 modalbody.find("[isprecheck]").click(function(){
 
@@ -531,7 +838,6 @@
                                   dataType:"JSON",
                                   success:function(data){
                                       isprechecksetdiv.attr("isprecheck",newval);
-                                      thistr.attr("precheck",newval)
                                       if(newval==="T"){
 
                                           isprechecksetdiv.html("<i class='far fa-check-square'></i>")
@@ -562,11 +868,44 @@
                 modalbody.find("[name='marksinputdiv']").find(".markssavebtn").click(function(){
 
 
-                    alert("this function update soon")
+                    var marks= modalbody.find("[name='marksinputdiv']").find("[name='marksinput']").val();
+                    marks = marks.trim();
+                    if(marks.length>0 ){
+                        $.ajax({
+                                  url:"/updatecluster",
+                                  data:{"target":"MARKS","clstrid":clstrid,"marks":marks},
+                                  method:"post",
+                                  dataType:"JSON",
+                                  success:function(data){
+                                    
+                                    $("#defaultModal").modal("hide");
+                                    
+                                    
+                                    var thistr = $("#clustersInfo").find("[name='clusterdetailtable']").find("[cid='"+clstrid+"']").closest("tr");
+                                    var row = clusterTable.row(thistr);
+                                    var dt = row.data();
+                                    dt.marks = marks.split(",");
+
+                                    
+                                    row.data(dt).draw();
+
+                                    //change marks
+                                    
+                                  },
+                                  error:function(){
+
+
+                                      alert("save error")
+                                  }
+
+
+
+                        }) 
+
+                    }
 
 
                 });
-
 
                 modalbody.find("[name='newnameinputdiv']").find(".savebtn").click(function(){
 
@@ -583,8 +922,15 @@
                                     
                                     $("#defaultModal").modal("hide");
                                     $("#mainsvg").find("[name='clstr"+clstrid+"']").text(newname);
-                                    thistr.find("[cname]").attr("cname",newname).text(newname);
-                                     
+                                    
+                                    var thistr = $("#clustersInfo").find("[name='clusterdetailtable']").find("[cid='"+clstrid+"']").closest("tr");
+                                    var row = clusterTable.row(thistr);
+                                    var dt = row.data();
+                                    dt.name = newname;
+
+                
+                                    row.data(dt).draw();
+
           
                                   },
                                   error:function(){
@@ -599,244 +945,43 @@
 
                           }
 
-                })
-                //////////////////
-                
-            })
-
-
-            div.find("[name='labeltoclstr']").click(function(){
-
-
-                appModel="editor";
-
-                var thistr = $(this).parent().parent();
-                var clstrid =thistr.find("[cid]").attr("cid");
-                
-                var cname =thistr.find("[cname]").attr("cname");
-
-                div.find("[setlabelname]").attr("setlabelname",cname);
-
-                div.find("[setlabelid]").attr("setlabelid",clstrid);
-
-            })
-
-
-            div.find("[name='deleteclstr']").click(function(){
-
-                var thistr = $(this).parent().parent();
-                
-                var clstrid =thistr.find("[cid]").attr("cid");
-                
-                var cname =thistr.find("[cname]").attr("cname");
-
-                $("#defaultModal").find(".modal-title").html("");
-                //$("#defaultModal").find(".modal-footer").html("");
-
-                //$("#defaultModal").find(".modal-header").hide();
-
-
-                $("#defaultModal").find(".modal-body").html("<span>Delete Cluster <b>"+cname+"</b>?</span> &nbsp;&nbsp; <span class='btn btn-sm btn-danger' name='yes'>Yes</span>&nbsp;&nbsp;<span class='btn btn-sm btn-secondary' name='no'>No</span>")
-                $("#defaultModal").modal("show");
-
-
-                $("#defaultModal").find("[name='no']").click(function(){
-
-                    $("#defaultModal").modal("hide");
-
                 });
 
-                
-                $("#defaultModal").find("[name='yes']").click(function(){
-                    $.ajax({
-                          url:"/deleteCluster",
-                          data:{ "clstrid":clstrid },
-                          method:"post",
-                          dataType:"JSON",
-                          success:function(data){
-                            
-                              $("#defaultModal").modal("hide");
 
-                              thistr.remove();
-                              
-                              $(".node[clstr='"+cname+"']").removeAttr("clstr").css("fill",defaultNodeColor);
-            
-                              $("#mainsvg").find("[name='clstr"+clstrid+"']").remove();
-
-                              
-                          },
-                          error:function(){
-
-
-                              alert("save error")
-                          }
-
-
-
-                    });
-                    
-
-                });
-
-                
-              
-            })
-
-
-            div.find("[cid]").click(function(){
-                
-                var thisdiv = $(this);
-                var cid = $(this).attr("cid");
-                var color = $(this).parent().find("[cname]").css("color");
-                var colored = $(this).attr("colored");
-                var checked = $(this).attr("ischecked");
-                var cname = $(this).parent().find("[cname]").attr("cname");
-                
-                if(checked === "F"){
-
-                  if(colored ==="F"){
-                    
-                    $.ajax({
-                        url:"/queryClstrCellsAndLabelByCid",
-                        data:{"cid":cid},
-                        method:"post",
-                        dataType:"JSON",
-                        
-                        success:function(res){
-
-                          var cellids = res.cellids;
-                          for(var i in cellids){
-
-                            d3.select("#g"+cellids[i]).attr("clstr",cname).style("fill",color);
-
-                          }
-
-                          thisdiv.attr("colored","T");
-                          thisdiv.html("<i class='far fa-check-square' style='color: steelblue;cursor:pointer;'></i>");
-                          thisdiv.attr("ischecked","T");
-
-                          var islabeled = res.labeled;
-
-                          if(islabeled  === true){
-                            var x2 = res["x"];
-                            
-                            var y2 = res["y"];
-                            var name = res["name"];
-                             
-                            scMainSvg.append("text").attr("class","clstrlabel").attr("name","clstr"+cid).text(name).attr("x",mainXscale(x2)+margin).attr("y",mainYscale(y2)+margin);
-                          }
-
-                         
-
-                        },
-                        error:function(){
-
-                          alert("error")
-
-                        }
-
-
-                    })
-
-
-
-
-                  }else if(colored==="T"){
-                    
-                    $(".node[clstr='"+cname+"']").css("fill",color);
-
-                    thisdiv.html("<i class='far fa-check-square' style='color: steelblue;cursor:pointer;'></i>");
-                    thisdiv.attr("ischecked","T");
-                    $("[name='clstr"+cid+"']").show();
-
-                  }
-
-
-                }else if(checked === "T"){
-
-                    $(".node[clstr='"+cname+"']").css("fill",defaultNodeColor);
-                    thisdiv.html("<i class='far fa-square' style='color: steelblue;cursor:pointer;'></i>");
-
-                    thisdiv.attr("ischecked","F");
-                    $("[name='clstr"+cid+"']").hide();
-                }
-
-            })
-            
-            autocheckClusters(clstrtype,div.find("[name='clusterdetailtable']"));
-          }//renderclstrtable
-
-
-
-          function autocheckClusters(targetClstrtype,clusterpanel){
-
-              startLoading2();
-              setTimeout(function(){
-                 
-                  var checkedtrlist=[];
-                  var prerendertrlist=[];
-                  clusterpanel.find("[clstrtype='"+targetClstrtype+"']").each(function(){
-
-
-                      var tr = $(this);
-                      var isprerender = $(this).attr("precheck");
-                      if(isprerender==="T"){
-
-                        prerendertrlist.push(tr);
-                      }
-
-                      var ischecked=tr.find("[ischecked]").attr("ischecked");
-                      if(ischecked==="T"){
-
-                        checkedtrlist.push(tr);
-                      }
-                  })
-
-
-                  if(checkedtrlist.length>0){
-
-                    for(var i in checkedtrlist){
-
-                      checkedtrlist[i].find("[cid]").trigger("click");
-                      //checkedtrlist[i].find("[cid]").trigger("click");
-                    }
-
-                    for(var i in checkedtrlist){
-
-                      checkedtrlist[i].find("[cid]").trigger("click");
-                      //checkedtrlist[i].find("[cid]").trigger("click");
-                    }
-
-                  }else if(prerendertrlist.length>0){
-
-
-                    for(var i in prerendertrlist){
-
-                      prerendertrlist[i].find("[cid]").trigger("click");
-                      //checkedtrlist[i].find("[cid]").trigger("click");
-                    }
-                    console.log("check");
-                    for(var i in prerendertrlist){
-
-                      prerendertrlist[i].find("[cid]").trigger("click");
-                      //checkedtrlist[i].find("[cid]").trigger("click");
-                    }
-                  }
-                  checkedtrlist=null;
-                  prerendertrlist=null;
-
-                  endLoading2();
-
-
-
-              },1)
-              
-
-              
+                //modalbody
 
 
           }
 
+          function autocheckClusters(clustertable){
+              
+              var checkedcid =[];
+              clustertable.find("[precheck='T']").each(function(){
+                  var thisdiv= $(this);
+                  var cid = $(this).attr("cid");
+                  var precheck=$(this).attr("precheck");
+                  if(precheck==="T"){
+                    checkedcid.push(thisdiv);
+                  }
+                  
+
+              });
+
+              if(checkedcid.length  >0){
+
+                  for(var i in checkedcid){
+
+                    checkedcid[i].trigger("click");
+
+                }
+
+              }
+
+                
+
+          }
+
+          
           function clearAllNodes(){
 
             $(".node").css("fill",defaultNodeColor);//.removeAttr("clstr");
@@ -850,51 +995,37 @@
 
             $(".node[clstr]").css("fill",defaultNodeColor).removeAttr("clstr");
             $(".clstrlabel").remove();
-            $("#clustersInfo").find("[colored='T']").attr("colored","F");
 
           }
 
           function renderInfoPanel(div_id){
 
             
-            var panelstr='';
 
-              panelstr+='<div class="card">';
-                panelstr+='<div class="card-header">';
-                  panelstr+='<a class="card-link" data-toggle="collapse" href="#genesearch">Gene search</a>'
-                panelstr+='</div>';
-                panelstr+='<div id="genesearch" class="collapse show"  data-parent="#infopanel">';
-                  panelstr+='<div class="card-body"></div>';
-                panelstr+='</div>';
+            var panelstr='<ul class="nav nav-tabs controlpanel">';
+              panelstr+='<li class="nav-item">';
+                panelstr+='<a class="nav-link active" data-toggle="tab" href="#genesearch">Gene Search</a>';
+
+              panelstr+='</li>';
+              panelstr+='<li class="nav-item">';
+                panelstr+='<a class="nav-link" data-toggle="tab" href="#clustersInfo">Clusters</a>';
+              panelstr+='</li>';
+               
+            panelstr+='</ul>';
+
+
+            panelstr+='<div class="tab-content">';
+              panelstr+='<div id="genesearch" class="tab-pane active"><br><div name="tabcontent"></div>';
 
               panelstr+='</div>';
-              ////
 
-              panelstr+='<div class="card">';
-                panelstr+='<div class="card-header">';
-                  panelstr+='<a class="card-link" data-toggle="collapse" href="#clustersInfo">Clusters</a>'
-                panelstr+='</div>';
-                panelstr+='<div id="clustersInfo" class="collapse"  data-parent="#infopanel">';
-                  panelstr+='<div class="card-body"></div>';
-                panelstr+='</div>';
+              panelstr+='<div id="clustersInfo" class="tab-pane fade"><br><div name="tabcontent"></div>';
 
-              panelstr+='</div>'
-              /////
+              panelstr+='</div>';
 
-
-              /*
-              panelstr+='<div class="card">';
-                panelstr+='<div class="card-header">';
-                  panelstr+='<a class="card-link" data-toggle="collapse" href="#CellSelection">Cluster Editor</a>'
-                panelstr+='</div>';
-                panelstr+='<div id="CellSelection" class="collapse"  data-parent="#infopanel">';
-                  panelstr+='<div class="card-body"><div name="sellectcelldiv">Select Cells</div></div>';
-                panelstr+='</div>';
-
-              panelstr+='</div>'
-
-              */
-
+              
+            panelstr+='</div>';
+            
 
             $(div_id).html(panelstr);
 
@@ -902,16 +1033,19 @@
 
 
             
-            var genesearchpanel = $(div_id).find("#genesearch").find(".card-body");
+            var genesearchpanel = $(div_id).find("#genesearch").find("[name='tabcontent']");
 
 
-            var clusterpanel = $(div_id).find("#clustersInfo").find(".card-body");
+            var clusterpanel = $(div_id).find("#clustersInfo").find("[name='tabcontent']");
             
+            var calculationpanel = $(div_id).find("#clstrcalculation").find("[name='tabcontent']");
             
             
             //alert(JSON.stringify(clstrs))
 
-            clusterpanel.html("<div><select name='clsterswitch' class='form-control form-control-sm'></select></div><div name='clstrdetail' style='width:100%;'></div><hr></hr><div name='sellectcelldiv'>Select Cells</div>");
+            clusterpanel.html("<div name='sellectcelldiv' style='height:28px;'>Select cells on the left to start cluster analysis.</div><hr></hr><div><select name='clsterswitch' class='form-control form-control-sm'></select></div><div name='clstrdetail'> </div>");
+            //
+
             var clsterswitch = clusterpanel.find("[name='clsterswitch']");
             for(var  i in clstrs){
 
@@ -919,6 +1053,8 @@
 
             }
             
+
+            var clstrDatatable = renderclstrtable( clusterpanel.find("[name='clstrdetail']"),clsterswitch.val());
 
 
             clsterswitch.on("change",function(){
@@ -929,16 +1065,14 @@
                 clusterpanel.find("[clstrtype='"+val+"']").show();
                 clearClusterState();
 
-                autocheckClusters(val,clusterpanel.find("[name='clstrdetail']"));
+                reloadclstrtable(clstrDatatable,val);
+
+                autocheckClusters( clusterpanel.find("[name='clstrdetail']") );
                 
+            });
+            
 
-
-            })
-
-
-            renderclstrtable( clusterpanel.find("[name='clstrdetail']"),clsterswitch.val())
-
-
+            //genesearch
 
             genesearchpanel.html("<textarea name='genesearcharea' rows='4' style='width:100%;max-width:200px;'></textarea><br>")
             genesearchpanel.append("<button name='genesearchbtn' class='btn btn-primary btn-sm'>search</button><hr></hr><div name='genesearchdetails'></div>")
@@ -968,9 +1102,9 @@
                           var maxval = res.maxval;
 
                           
-                                  var redscale = d3.scaleLinear()
+                          var redscale = d3.scaleLinear()
                                     .domain([0,maxval])
-                                    .range(["#FFFFFF", "#FF0000"]);
+                                    .range(["#ff8080", "#800000"]);
 
                            
 
@@ -983,10 +1117,196 @@
                           }
 
                           genesearchpanel.find("[name='genesearchdetails']").html("<div name='genesearchplot'></div>");
-                          renderGenesearchVioPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"));
+                          renderGenesearchPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"),gene);
                         }else if(geneCount ===0){
 
                           genesearchpanel.find("[name='genesearchdetails']").html("gene not found");
+
+
+                        }else if(geneCount ===2){
+                            
+
+                            genesearchpanel.find("[name='genesearchdetails']").html("<svg id='twogeneplot' style='width:100%;height:160px;' ></svg><hr></hr><div name='genesearchplot'></div>");
+                            
+                            //render plot
+                            var totalw = Math.floor($("#twogeneplot").width());
+
+                            let g1 = data["g"][0];
+                            let g2 = data["g"][1];
+                            let g3 = "intersection";
+
+                            let c1 = data["c"][0];
+                            let c2 = data["c"][1];
+                            let c3 = data["c"][2];
+
+                            var maxlength = Math.max(c1,c2)+c3;
+                             
+                            let circleRLinear = d3.scaleLinear().domain([0,maxlength]).range([4,(140-10)/4]);
+
+                            var r1;
+                            var r2;
+                            var r3;
+                            if(c1===0){
+                              r1=0;
+                            }else{
+
+                              r1 = circleRLinear(c1);
+                            }
+
+                            if(c2===0){
+                              r2=0;
+                            }else{
+
+                              r2 = circleRLinear(c2);
+                            }
+
+                            if(c3===0){
+                              r3=0;
+                            }else{
+
+                              r3 = circleRLinear(c3);
+                            }
+                            let dt1 = data["d1"] ;
+                            let dt2 = data["d2"] ;
+                            let dt3 = data["d3"] 
+
+                            let g = d3.select("#twogeneplot").append("g");
+                            g.append("line")
+                            .attr("x1",50)
+                            .attr("x2",50)
+                            .attr("y1",0)
+                            .attr("y2",150)
+                            .attr("stroke-width",1)
+                            .attr("stroke","black")
+
+                            g.append("line")
+                            .attr("x1",40)
+                            .attr("x2",220)
+                            .attr("y1",140)
+                            .attr("y2",140)
+                            .attr("stroke-width",1)
+                            .attr("stroke","black");
+
+
+                            g.append("circle")
+                              .attr("r",r1)
+                              .attr("g",g1)
+                              .attr("cx",50+ 180/4)
+                              .attr("cy",140/4)
+                              .style("fill","red")
+                              .style("stroke","red")
+                              .on("mouseover",function(){
+
+                                let gname = g1;
+                                let cellids = dt1;
+                                let celllen = c1;
+                                pagex = d3.event.pageX;
+                                pagey = d3.event.pageY;
+
+                                let form = "<div>";
+
+                                if(c1>1){
+
+                                  form+="<h5 style='white-space:nowrap;'>"+gname+" (only).</h5>";
+
+
+                                }
+                                form+="<h5 style='white-space:nowrap;'>"+c1+" </h5>"
+                                form+="</div>";
+                                
+                                d3.select("#tooltip").style("opacity",.9)
+                                  .style("left",(pagex+30)+"px")
+                                  .style("left",(pagey-100)+"px")
+                                  .html(form)
+
+                                
+                              });
+
+                              g.append("circle")
+                              .attr("r",r2)
+                              .attr("g",g2)
+                              .attr("cx",50+ 3*180/4)
+                              .attr("cy",3* 140/4)
+                              .style("fill","green")
+                              .style("stroke","green")
+                              .on("mouseover",function(){
+
+                                let gname = g2;
+                                let cellids = dt2;
+                                let celllen = c2;
+                                pagex = d3.event.pageX;
+                                pagey = d3.event.pageY;
+
+                                let form = "<div>";
+
+                                if(gname.length>=1){
+
+                                  form+="<h5 style='white-space:nowrap;'>"+gname+" (only).</h5>";
+
+
+                                }
+                                form+="<h5 style='white-space:nowrap;'>"+c2+" </h5>"
+                                form+="</div>";
+                                
+                                d3.select("#tooltip").style("opacity",.9)
+                                  .style("left",(pagex+30)+"px")
+                                  .style("left",(pagey-100)+"px")
+                                  .html(form)
+
+                                
+                              });
+
+
+                              g.append("circle")
+                              .attr("r",r3)
+                              .attr("g",g3)
+                              .attr("cx",50+ 3*180/4)
+                              .attr("cy", 140/4)
+                              .style("fill","yellow")
+                              .style("stroke","yellow")
+                              .on("mouseover",function(){
+
+                                let gname = g3;
+                                let cellids = dt3;
+                                let celllen = c3;
+                                pagex = d3.event.pageX;
+                                pagey = d3.event.pageY;
+
+                                let form = "<div>";
+
+                                if(gname.length>=1){
+
+                                  form+="<h5 style='white-space:nowrap;'>"+gname+" .</h5>";
+
+
+                                }
+                                form+="<h5 style='white-space:nowrap;'>"+c3+" </h5>"
+                                form+="</div>";
+                                
+                                d3.select("#tooltip").style("opacity",.9)
+                                  .style("left",(pagex+30)+"px")
+                                  .style("left",(pagey-100)+"px")
+                                  .html(form)
+
+                                
+                              });
+
+
+                              g.append("text")
+                                .text(g1)
+                                .attr("name","fitedgene")
+                                .attr("text-anchor","middle")
+                                .attr("transform","translate(35,60) rotate(-90)" )
+                                .style("cursor","pointer");
+
+                              g.append("text")
+                                .text(g2)
+                                .attr("x",50+180/2)
+                                .attr("y",160) 
+                                .attr("name","fitedgene")
+                                .attr("text-anchor","middle")
+                                .style("cursor","pointer");
+
 
 
                         }else{
@@ -1069,7 +1389,7 @@
                                  
                                   var redscale = d3.scaleLinear()
                                     .domain([0,maxval])
-                                    .range(["#FFFFFF", "#FF0000"]);
+                                    .range(["#ff8080", "#800000"]);
 
                                   
 
@@ -1083,7 +1403,7 @@
                                   }
 
 
-                                  renderGenesearchVioPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"));
+                                  renderGenesearchPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"),newgstr);
 
 
                                 },error:function(){
@@ -1118,8 +1438,50 @@
             
             //gene serch btn end
 
-            $("#clustersInfo").on('shown.bs.collapse', function(){
-                 var thisdiv = $("#clustersInfo").find("table").find("tbody");
+            $(".controlpanel").on('shown.bs.tab', function(event){
+
+                //var active_tab = $(event.target).text();
+                //var previous_tab = $(event.relatedTarget).text();
+                var active_tab = $(event.target).attr("href");
+                if(active_tab ==="#clustersInfo"){
+
+                    clearAllNodes();
+                    var thisdiv = $("#clustersInfo").find("[name='clusterdetailtable']");
+                    thisdiv.find("[ischecked='T']").each(function(){
+                       $(this).trigger("click");
+                       $(this).trigger("click");
+
+
+                   })
+
+                }else if(active_tab ==="#genesearch"){
+
+                    var temp = $("#genesearch").find("[name='fitedgene'][genechecked='T']");
+                    if(temp.length===1){
+
+                        temp.trigger("click");
+
+                    }else{
+
+                        if($("#genesearch").find("[name='genesearchrestable']").length===1){
+
+                        }else{
+
+                            $("#genesearch").find("[name='genesearchbtn']").trigger("click");
+                        }
+                    
+                    
+
+                    }
+                }
+
+
+
+            });
+
+            $("#clustersInfo").on('shown.bs.tab', function(){
+
+                 
                  clearAllNodes();
                  thisdiv.find("[ischecked='T']").each(function(){
                     var cid = $(this).attr("cid");
@@ -1134,45 +1496,7 @@
             });
 
 
-            $("#genesearch").on('shown.bs.collapse', function(){
-
-              var temp = $("#genesearch").find("[name='fitedgene'][genechecked='T']");
-
-              if(temp.length===1){
-
-                temp.trigger("click");
-
-              }else{
-
-                 if($("#genesearch").find("[name='genesearchrestable']").length===1){
-
-                 }else{
-
-                    $("#genesearch").find("[name='genesearchbtn']").trigger("click");
-                 }
-                
-                
-
-              } 
-
-            });
-
-
-
-            /*
-            $("#CellSelection").on('shown.bs.collapse', function(){
-
-                appModel="editor";
-                
-            });
-
-            $("#CellSelection").on('hidden.bs.collapse', function(){
-
-                appModel=0;
-                
-            });
-            */
-            
+          
 
           }//render info panel
 
@@ -1225,11 +1549,7 @@
             }
 
 
-            //xrange[0]=xrange[0]-1;
-            //xrange[1]=xrange[1]+1;
-
-            //yrange[0]=yrange[0]-1;
-            //yrange[1]=yrange[1]+1;
+            
 
 
             mainXscale = d3.scaleLinear()
@@ -1272,7 +1592,8 @@
                     renderNodes();
                   }else{
 
-                    renderLabel();
+                    renderInfoPanel("#infopanel");
+
                     renderActions();
                     endLoading2();
 
@@ -1287,23 +1608,7 @@
               },1)
 
             }
-            //alert(JSON.stringify(data))
-
-           
-            
-            //render label;
-            function renderLabel(){
-
-                /*
-                d3.selectAll(".clstrlabel").remove();
-                $.ajax({
-
-
-
-
-                })
-                */
-            }
+            //alert(JSON.stringify(data)
             
             function renderActions(){
               selectednodes=[];
@@ -1327,7 +1632,9 @@
                   
                 
                 //renderfunction
-                $("#calculationdiv").html("Select lasso");
+                $("#clustersInfo").find("[name='sellectcelldiv']").html("Select cells on the left to start cluster analysis.");
+
+                $("#clustersInfo").find("[name='contrastwithselected']").hide();
 
               }
               var drawPath = function(isdone) {
@@ -1390,12 +1697,6 @@
                 cell_nodes.classed("selected", false);
                 let tempcoord = d3.mouse(this);
 
-
-                //tempcoord[0] = tempcoord[0]-gtranslate[0];
-                //tempcoord[1] = tempcoord[1]-gtranslate[1];
-                
-                //tempcoord[0] = tempcoord[0]-margin;
-                //tempcoord[1] = tempcoord[1]-margin;
                 if(coords.length>0){
                   let lastcoord = coords[coords.length-1];
                   if(Math.abs(lastcoord[0]-tempcoord[0])+ Math.abs(lastcoord[1]-tempcoord[1]) >2){
@@ -1441,13 +1742,7 @@
                     x = x-margin;
                     y = y-margin;
 
-                    /*
-                    if(mainTransform!==undefined){
-                      x = mainTransform.invertX(x);
-                      y = mainTransform.invertY(y);
-
-                    }
-                    */
+                    
                     var x2 = mainXscale.invert(x);
                     var y2 =  mainYscale.invert(y);
 
@@ -1511,11 +1806,7 @@
 
                     });
 
-
-
                     
-                     //need delete
- 
                     modalbody.find("[name='setclstrlabelhere']").click(function(){
                       var clstrid = modalbody.find("[name='saveclstrposselect']").val();
                       var clstrText = tempdata2[clstrid];
@@ -1585,274 +1876,667 @@
 
 
           
-          function renderGenesearchVioPlot(div){
+          function renderGenesearchPlot(div,gene){
             
-            startLoadingDiv(div)
 
-            setTimeout(function(){
-
-
-              var clstrval = $("#clustersInfo").find("[name='clsterswitch']").val();
-              
-              var tablediv = $("#clustersInfo").find("[name='clusterdetailtable']");
-              tablediv.find("tbody").find("[clstrtype='"+clstrval+"']").each(function(){
-                  var thistr = $(this);
-                  var cid = $(this).find("[cid]").attr("cid");
+            div.html("<div name='barsvgselection'></div><div id='barsvgdiv'></div>")
 
 
-              })
-              
+            var selectstr="<select name='plotclstrselection'>";
 
-            },1)
+            if("cellType" in clstrs){
 
+              selectstr+="<option value='cellType'>cellType</option>";
+            }
 
-          }
+            for(var i in clstrs){
 
-          function execafterselected(selectednodes){
-            var targetdiv = $("#clustersInfo").find("[name='sellectcelldiv']");
-            targetdiv.html("<span style='color:steelblue;'>"+selectednodes.length +"</span> cells be selected<br><div name='selectedcalculationsavediv'></div>");
+              if(i!=="cellType"){
 
-            targetdiv.find("[name='selectedcalculationsavediv']").html("<button class='btn btn-primary btn-sm' name='contrastbtn'> Contrast </button>&nbsp;&nbsp;<span class='btn btn-info btn-sm' name='savebtn'> Save </span>");
-
-
-
-            targetdiv.find("[name='selectedcalculationsavediv']").find("[name='savebtn']").click(function(){
-
-
-              $("#defaultModal").find(".modal-title").html("Cluster Editor");
-              $("#defaultModal").find(".modal-footer").html("");
-                     
-
-              var modalbody = $("#defaultModal").find(".modal-body");
-              modalbody.html("");
-              modalbody.append("<div><span>Cluster Type:</span><select class='form-control form-control-sm' name='clstrtypeinput'><option value='cellType'>Cell Type</option><option value='Patient'>Patient</option></select></div>");
-              modalbody.append("<div><span>Cluster Name :</span><div name='clstrnameinputdiv'></div></div>");
-
-              modalbody.append("<div><span>Mark Genes:</span><textarea class='form-control' name='markgenestextarea'></textarea></div>");
-              modalbody.append("<div><span>Comment:</span><textarea  type='text' class='form-control form-control-sm' name='clstrcommentinput'></textarea></div><div style='height:5px;'></div>");
-              modalbody.append("<button name='saveclstrbtn' class='btn btn-primary btn-sm'>Save</button>");
-
-
-
-
-
-              modalbody.find("[name='clstrtypeinput']").change(function(){
-
-                  var clstrtype = modalbody.find("[name='clstrtypeinput']").val();
-                  renderclusternameinput(clstrtype);
-
-              });
-
-              modalbody.find("[name='clstrtypeinput']").trigger("change");
-
-              function renderclusternameinput(clstr){
-                
-                 
-                  $.ajax({
-                      url:"/getClusterClassification",
-                      data:{"clstrType":clstr},
-                      method:'post',
-                      dataType:"JSON",
-                      success:function(data){
-                        //endLoading2();
-                        data = data.clstrTypes;
-
-                       
-
-                        renderClstrSelectMenu(data,modalbody.find("[name='clstrnameinputdiv']"));
-
-
-                      },error:function(){
-
-                        //errorLoading2();
-
-                      }
-
-                  })
-
-
-                
-                
-
+                selectstr+="<option value='"+i+"'>"+i+"</option>";
               }
-
-              modalbody.find("[name='saveclstrbtn']").click(function(){
-                  var name = modalbody.find("[name='clstrnameinput']").val();
-                  var type = modalbody.find("[name='clstrtypeinput']").val();
-                  var comment = modalbody.find("[name='clstrcommentinput']").val();
-                  var markgenes = modalbody.find("[name='markgenestextarea']").val();
-
-                  name = name.trim();
-
-                  if(name === ""){
-                     alert("input a name of cluster");
-                  }else{
-                      $.ajax({
-                        url:"/savecluster",
-                        data:{"sampleid":sampleObjectId,name:name,type:type,comment:comment,"cells":selectednodes.join(","),"marks":markgenes},
-                        method:"post",
-                        dataType:"JSON",
-                        success:function(data){
-                          
-                          if(data.status==="success"){
-
-                              targetdiv.find("[name='selectedcalculationsavediv']").find("[name='savebtn']").html("<span style='color:green;'>success</span>").removeAttr("class");
-
-                              var tempstr="<tr clstrtype='"+type+"' precheck='F'>";
-                              tempstr+="<td colored='F' cid='"+data.cid+"' ischecked='F'><i class='far fa-square' style='color: steelblue;cursor:pointer;'></i></td>"
-                              tempstr+="<td cname='"+name+"' style='color:"+data["color"]+";cursor:default;'>"+name+"</td>";
-                              tempstr+="<td name='marks'>"+markgenes+"</td>";
-
-                              var userrole = sessionStorage.getItem("userrole");
-                              if(userrole==="admin"){
-
-                                tempstr+="<td name='action'  >"+ "<button class='btn btn-sm btn-warning' name='editclstr' style='font-size:11px;display:inline-block;color:white;'>Edit</button>&nbsp;<button class='btn btn-sm btn-danger' name='deleteclstr' style='font-size:11px;display:inline-block;'>Delete</button>&nbsp;<button class='btn btn-sm btn-primary' name='labeltoclstr' style='font-size:11px;display:inline-block;'>Set Label</button>"+"</td>";
-                              }
-
-                              tempstr+='</tr>'
-
-                              $("#clustersInfo").find("[name='clusterdetailtable']").find("tbody").append(tempstr)
-
-                          }else{
-
-                              targetdiv.find("[name='selectedcalculationsavediv']").find("[name='savebtn']").html("<span style='color:red;'>save cluster error</span>").removeAttr("class");;
-
-                          }
-
-                        },
-                        error:function(){
-
-
-                            targetdiv.find("[name='selectedcalculationsavediv']").find("[name='savebtn']").html("<span style='color:red;'>save cluster error</span>").removeAttr("class");;
-                        }
-
-
-
-                      })
-                      
-
-                  }
-
-
-              })//save
-
-
-
-
-
-              $("#defaultModal").modal("show");
-
-
-
-
-            })
-
-
-            /*
-            renderCalculation(selectednodes);
-
-
-            
-            savenodediv.html("");
-            savenodediv.append("<div><span>Cluster Type:</span><select class='form-control form-control-sm' name='clstrtypeinput'><option value='cellType'>Cell Type</option><option value='Patient'>Patient</option></select></div>");
-            //savenodediv.append("<div><span>Mark Genes:</span><textarea name='markgenestextarea'></textarea></div>");
-            savenodediv.append("<div><span>Comment:</span><textarea  type='text' class='form-control form-control-sm' name='clstrcommentinput'></textarea></div><div style='height:5px;'></div>");
-            savenodediv.append("<button name='saveclstrbtn' class='btn btn-primary btn-sm'>Save</button>");
-
-             
-            savenodediv.find("[name='clstrtypeinput']").change(function(){
-
-                var clstrtype = savenodediv.find("[name='clstrtypeinput']").val();
-                renderclusternameinput(clstrtype,savenodediv);
-
-            });
-
-            savenodediv.find("[name='clstrtypeinput']").trigger("change");
-
-            savenodediv.find("[name='saveclstrbtn']").click(function(){
-                var name = savenodediv.find("[name='clstrnameinput']").val();
-                var type = savenodediv.find("[name='clstrtypeinput']").val();
-                var comment = savenodediv.find("[name='clstrcommentinput']").val();
-                //var markgenes = savenodediv.find("[name='markgenestextarea']").val();
-
-                name = name.trim();
-
-                if(name === ""){
-                   alert("input a name of cluster");
-                }else{
-                                        $.ajax({
-                      url:"/savecluster",
-                      data:{"sampleid":sampleObjectId,name:name,type:type,comment:comment,"cells":selectednodes.join(",")},
-                      method:"post",
-                      dataType:"JSON",
-                      success:function(data){
-                        
-                        if(data.result==="success"){
-
-                            targetdiv.html("<span style='color:green;'>success</span>");
-                        }else{
-
-                            targetdiv.html("<span style='color:red;'>save cluster error</span>");
-
-                        }
-
-                      },
-                      error:function(){
-
-
-                          targetdiv.html("<span style='color:red;'>save cluster error</span>");
-                      }
-
-
-
-                    })
-                    
-
-                }
-
-
-            })
-
-
-
-            //render contrast
-            
-
-
-            function renderclusternameinput(clstr,div){
-                
-                 
-                  $.ajax({
-                      url:"/getClusterClassification",
-                      data:{"clstrType":clstr},
-                      method:'post',
-                      dataType:"JSON",
-                      success:function(data){
-                        //endLoading2();
-                        data = data.clstrTypes;
-
-                        if(clstr==="cellType"){
-
-
-                        }
-                        renderClstrSelectMenu(data,$("[name='clstrnameinputdiv']"));
-
-
-                      },error:function(){
-
-                        //errorLoading2();
-
-                      }
-
-                  })
-
-
-                  //$("[name='clstrnameinputdiv']").html("<input  type='text' class='form-control form-control-sm' name='clstrnameinput'>");
-                
 
             }
 
-            */
+            selectstr+="</select>";
+
+
+            div.find("[name='barsvgselection']").html("<h6>"+gene+" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "+selectstr+" </h6>")
+
+
+            var barplotdata=null;
+
+            div.find("[name='barsvgselection']").find("[name='plotclstrselection']").on("change",function(){
+
+                var value = $(this).val();
+                var data2=[];
+                for(var i in barplotdata){
+                    if(barplotdata[i]["ctype"]===value){
+                      data2.push(barplotdata[i])
+                    }
+                    
+                }
+
+                renderBarplot("#barsvgdiv",data2,false);
+
+
+
+            });
+
+            var currentclstr = div.find("[name='barsvgselection']").find("[name='plotclstrselection']").val();
+
+            
+            var plotdiv = $("#barsvgdiv");
+            startLoadingDiv(plotdiv)
+            
+
+            $.ajax({
+
+              url:"/getGeneSearchPlotData",
+              data:{"gene":gene,spid:sampleObjectId},
+              method:'post',
+              dataType:"JSON",
+              success:function(data){
+                  endLoadingDiv(plotdiv);
+
+                  barplotdata = data.data;
+
+                  var data2=[];
+                  for(var i in barplotdata){
+                    if(barplotdata[i]["ctype"]===currentclstr){
+                      data2.push(barplotdata[i])
+                    }
+                    
+                  }
+                  
+                  renderBarplot("#barsvgdiv",data2,false);
+                  
+
+              },error:function(){
+
+                  endLoadingDiv(div);
+
+              }
+
+
+
+            })
+
+
+
+          }
+          
+
+          function renderBarplot2(div,data,geneName,issort){
+            var minv=Infinity;
+            var maxv =0;
+
+            if(issort){
+
+
+
+            
+              for(var i=0;i<data.length;i++){
+
+                for(var j=i;j<data.length;j++){
+
+                  var val1 = data[i]["median"];
+                  var val2 = data[j]["median"];
+
+                  if(val2 > val1){
+                    temp =  data[i];
+                    data[i]=data[j];
+                    data[j]=temp;
+                    
+
+                  }
+                }
+
+              }
+
+            }
+            for(var i=0;i<data.length;i++){
+
+              var tempmax = data[i]["max"];
+              var tempmin = data[i]["min"];
+
+              if(tempmin<minv){
+                minv = tempmin;
+              }
+              if(tempmax>maxv){
+                maxv = tempmax;
+              }
+
+              
+
+            }
+
+
+            var divwidth = $(div).width();
+
+            var barmargin={ right:13,bottom:100,top:9, left:50};
+            var gap =20;
+            var width =  Math.ceil(divwidth - 2*barmargin.left - 2*barmargin.right-gap);
+            var height = 150;
+            var barheight =height;
+            
+            var barwidth = (width)/2;
+             
+
+            $(div).html("<h6>"+geneName+"</h6>");
+            var svg = d3.select(div).append("svg").attr("id",'barsvg')
+              .attr("width", width +  2*barmargin.left +  2*barmargin.right+gap)
+              .attr("height", height +  barmargin.top + barmargin.bottom);
+
+            var maxmedian=0;
+            var labels=[];
+
+            for(var i in data){
+
+              median = data[i]["median"];
+              if(median > maxmedian){
+
+                maxmedian = median;
+              }
+
+              labels.push(data[i]["name"])
+
+
+            }
+
+
+            var xliner = d3.scaleLinear()
+                .domain([0, labels.length+1 ])
+                .range([0, barwidth]);
+
+
+            var yliner1 = d3.scaleLinear()
+                .domain([0, 1])
+                .range([barheight,0]);
+
+
+
+            var yliner2 = d3.scaleLinear()
+                .domain([minv, maxv])
+                .range([barheight,0]);
+
+            var xAxis = d3.axisBottom(xliner).tickFormat("").ticks(labels.length+1);
+            var yAxis1 = d3.axisLeft(yliner1);
+            var yAxis2 = d3.axisLeft(yliner2);
+
+            var barg = svg.append("g").attr("id","barg").attr("transform",  "translate("+barmargin.left+"," + (barmargin.top) + ")");
+            svg.append('g').attr("transform",  "translate("+barmargin.left+"," +  barmargin.top + ")").call(yAxis1);
+            svg.append('g').attr("transform",  "translate("+(2*barmargin.left+barwidth+gap)+"," +barmargin.top + ")").call(yAxis2); 
+
+            svg.append('g').attr("transform", "translate("+barmargin.left+"," + (barheight+barmargin.top) + ")").call(xAxis);
+            svg.append('g').attr("transform", "translate("+(2*barmargin.left+barwidth+gap)+"," + ( barmargin.top+barheight) + ")").call(xAxis);
+
+            for(var i=0;i<labels.length;i++){
+              
+
+              barg.append("g").attr("class","xlabel2").attr("transform", "translate("+xliner(i+1)+"," + (barheight) + ")")
+                .append("text").text(labels[i]).style("text-anchor", "end")
+                      .attr("dx", "-.8em")
+                      .attr("dy", ".15em")
+                      .style("font-size",10)
+                      .attr("transform", "rotate(-90)");
+
+
+              barg.append("g").attr("class","xlabel2").attr("transform", "translate("+(xliner(i+1)+barwidth+gap)+"," + ( barheight ) + ")")
+                .append("text").text(labels[i]).style("text-anchor", "end")
+                      .attr("dx", "-.8em")
+                      .attr("dy", ".15em")
+                      .style("font-size",10)
+                      .attr("transform", "rotate(-90)");
+
+
+            }
+
+
+            var plot1y = barheight;
+            var plot2y = 0 ;
+            var barwidthx = barwidth/data.length/2;
+            var boxwidthx = barwidthx;
+            var hf_boxwidth = barwidthx/2
+            if(barwidthx> 35){
+              barwidthx =35;
+            }
+            for(var i=0;i<data.length;i++){
+
+              var color = data[i]["color"];
+              var percval =data[i]["perc"];
+              var barh1 = yliner1(percval);
+              barh1 = barheight-barh1;
+
+              var y1 = plot1y-barh1
+              var x1 = xliner(i+1)-(barwidthx/2);
+
+              var boxx1 = xliner(i+1)-(hf_boxwidth)+gap+barwidth+barmargin.left;
+              var boxx2 = xliner(i+1)+(hf_boxwidth)+gap+barwidth+barmargin.left;
+
+              barg.append("rect").attr("x",x1).attr("y",y1).attr("width",barwidthx).attr("height",barh1).style("fill",color);
+
+
+              var min= yliner2(data[i]["min"]);
+              var max = yliner2(data[i]["max"]);
+              var median = yliner2(data[i]["median"]);
+              var q1 = yliner2(data[i]["1q"]);
+              var q3 = yliner2(data[i]["3q"]);
+              //alert(medianval)
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+median)
+                .attr("y2",plot2y+median)
+                .style("stroke-width",1);
+
+
+              
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+max)
+                .attr("y2",plot2y+max)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+min)
+                .attr("y2",plot2y+min)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q1)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q3)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx1)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx2)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1", (xliner(i+1)+gap+barwidth+barmargin.left)  )
+                .attr("x2", (xliner(i+1)+gap+barwidth+barmargin.left) )
+                .attr("y1",plot2y+max)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1", (xliner(i+1)+gap+barwidth+barmargin.left) )
+                .attr("x2", (xliner(i+1)+gap+barwidth+barmargin.left) )
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+min)
+                .style("stroke-width",1);
+
+              barg.append("rect")
+                .style("fill",color)
+                .style("fill-opacity",0.5)
+                .attr("x",boxx1)
+                .attr("y",plot2y+q3)
+                .attr("height",   q1-q3)
+                .attr("width",2*hf_boxwidth)
+
+
+
+            }//for
+
+            var label1= svg.append("g").attr("class","boxbar").attr("transform", "translate( "+(2*barmargin.left+gap+barwidth-40)+","+(barmargin.top+barheight/2)+" ) rotate(-90)")
+            .append("text").text("Counts").style("font-size","13")
+              .attr("text-anchor", "middle");
+              //.attr("x",barmargin.left-30).attr("y",barmargin.top+barheight/2);//;
+            var label2= svg.append("g").attr("class","percbar").attr("transform", "translate( "+(barmargin.left-35)+" , "+(barmargin.top+barheight/2)+" ) rotate(-90)")
+              .append("text").text("Positive cells").attr("text-anchor", "middle").style("font-size","13");
+          }//renderbarplot2
+
+
+
+
+
+
+
+          function renderBarplot(div,data,issort){
+            
+
+
+            var minv=Infinity;
+            var maxv =0;
+
+            if(issort){
+
+
+
+            
+              for(var i=0;i<data.length;i++){
+
+                for(var j=i;j<data.length;j++){
+
+                  var val1 = data[i]["median"];
+                  var val2 = data[j]["median"];
+
+                  if(val2 > val1){
+                    temp =  data[i];
+                    data[i]=data[j];
+                    data[j]=temp;
+                    
+
+                  }
+                }
+
+              }
+
+            }
+            for(var i=0;i<data.length;i++){
+
+              var tempmax = data[i]["max"];
+              var tempmin = data[i]["min"];
+
+              if(tempmin<minv){
+                minv = tempmin;
+              }
+              if(tempmax>maxv){
+                maxv = tempmax;
+              }
+
+              
+
+            }
+
+
+            
+
+
+            var divwidth = $(div).width();
+
+            var barmargin={ right:26,bottom:100,top:9, left:45};
+            var width =  Math.ceil(divwidth - barmargin.left - barmargin.right);
+            var height = 220;
+            var barheight =height/2;
+            var gap=20;
+
+
+
+
+            
+
+            $(div).html("");
+            var svg = d3.select(div).append("svg").attr("id",'barsvg')
+              .attr("width", width +  barmargin.left +  barmargin.right)
+              .attr("height", height +  barmargin.top + barmargin.bottom+gap);
+
+            var maxmedian=0;
+            var labels=[];
+
+            for(var i in data){
+
+              median = data[i]["median"];
+              if(median > maxmedian){
+
+                maxmedian = median;
+              }
+
+              labels.push(data[i]["name"])
+
+
+            }
+
+
+            var xliner = d3.scaleLinear()
+                .domain([0, labels.length+1 ])
+                .range([0, width]);
+
+
+            var yliner1 = d3.scaleLinear()
+                .domain([0, 1])
+                .range([barheight,0]);
+
+
+
+            var yliner2 = d3.scaleLinear()
+                .domain([minv, maxv])
+                .range([barheight,0]);
+
+
+            var xAxis = d3.axisBottom(xliner).tickFormat("").ticks(labels.length+1);
+            var yAxis1 = d3.axisLeft(yliner1);
+            var yAxis2 = d3.axisLeft(yliner2);
+
+            var barg = svg.append("g").attr("id","barg").attr("transform",  "translate("+barmargin.left+"," + (barmargin.top) + ")")
+            svg.append('g').attr("transform",  "translate("+barmargin.left+"," + (barmargin.top) + ")").call(yAxis1);
+            svg.append('g').attr("transform",  "translate("+barmargin.left+"," + ( barmargin.top+barheight+gap) + ")").call(yAxis2); 
+
+            svg.append('g').attr("transform", "translate("+barmargin.left+"," + (barheight+barmargin.top) + ")").call(xAxis);
+            svg.append('g').attr("transform", "translate("+barmargin.left+"," + ( barmargin.top+2*barheight+gap) + ")").call(xAxis);
+
+
+            for(var i=0;i<labels.length;i++){
+              
+
+              barg.append("g").attr("class","xlabel2").attr("transform", "translate("+xliner(i+1)+"," + (2*barheight+gap) + ")")
+                .append("text").text(labels[i]).style("text-anchor", "end")
+                      .attr("dx", "-.8em")
+                      .attr("dy", ".15em")
+                      .style("font-size",10)
+                      .attr("transform", "rotate(-90)");
+
+
+            }
+
+
+            var plot1y = barheight;
+            var plot2y = barheight+gap;
+            var barwidth = width/data.length/2;
+            var boxwidth = barwidth;
+            var hf_boxwidth = barwidth/2
+            if(barwidth> 33){
+              barwidth =33;
+            }
+            for(var i=0;i<data.length;i++){
+
+              var color = data[i]["color"];
+              var percval =data[i]["perc"];
+              var barh1 = yliner1(percval);
+              barh1 = barheight-barh1;
+
+              var y1 = plot1y-barh1
+              var x = xliner(i+1)-(barwidth/2);
+
+              var boxx1 = xliner(i+1)-(hf_boxwidth);
+              var boxx2 = xliner(i+1)+(hf_boxwidth);
+
+
+              barg.append("rect").attr("x",x).attr("y",y1).attr("width",barwidth).attr("height",barh1).style("fill",color);
+              //.style("fill",data[i]["color"]);
+              
+              var min= yliner2(data[i]["min"]);
+              var max = yliner2(data[i]["max"]);
+              var median = yliner2(data[i]["median"]);
+              var q1 = yliner2(data[i]["1q"]);
+              var q3 = yliner2(data[i]["3q"]);
+              //alert(medianval)
+
+              
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+median)
+                .attr("y2",plot2y+median)
+                .style("stroke-width",1);
+
+
+              
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+max)
+                .attr("y2",plot2y+max)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+min)
+                .attr("y2",plot2y+min)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q1)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q3)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx1)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx2)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",xliner(i+1))
+                .attr("x2",xliner(i+1))
+                .attr("y1",plot2y+max)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",xliner(i+1))
+                .attr("x2",xliner(i+1))
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+min)
+                .style("stroke-width",1);
+
+
+              barg.append("rect")
+                .style("fill",color)
+                .style("fill-opacity",0.5)
+                .attr("x",boxx1)
+                .attr("y",plot2y+q3)
+                .attr("height",   q1-q3)
+                .attr("width",2*hf_boxwidth)
+
+              /*
+              var barh2 = yliner2(medianval);
+              barh2 = barheight-barh2;
+              
+              barg.append("rect").attr("x",x).attr("y",y2).attr("width",barwidth).attr("height",barh2).style("fill","#3376FF");
+              //.style("fill",data[i]["color"]);
+              */
+            }
+            var label1= svg.append("g").attr("class","boxbar").attr("transform", "translate( "+(barmargin.left-35)+","+(barmargin.top+gap +barheight+barheight/2)+" ) rotate(-90)")
+            .append("text").text("Counts").style("font-size","13")
+              .attr("text-anchor", "middle");
+              //.attr("x",barmargin.left-30).attr("y",barmargin.top+barheight/2);//;
+            var label2= svg.append("g").attr("class","percbar").attr("transform", "translate( "+(barmargin.left-35)+" , "+(barmargin.top+barheight/2)+" ) rotate(-90)")
+              .append("text").text("Positive cells").attr("text-anchor", "middle").style("font-size","13");
+            //.attr("x",barmargin.left-30).attr("y",barmargin.top+barmargin.bottom+barheight+barheight/2); 
+
+             
+
+          }
+
+
+
+
+
+          function execafterselected(selectednodes){
+            var targetdiv = $("#clustersInfo").find("[name='sellectcelldiv']");
+            targetdiv.html("<span style='color:steelblue;'>"+selectednodes.length +"</span> cells selected &nbsp;<span name='selectedcalculationsavediv'></span>");
+
+            //targetdiv.find("[name='selectedcalculationsavediv']").html("<button class='btn btn-primary btn-sm' name='contrastbtn'> Contrast </button>&nbsp;&nbsp;<span class='btn btn-info btn-sm' name='savebtn'> Save </span>");
+            targetdiv.find("[name='selectedcalculationsavediv']").html("<button class='btn btn-primary btn-sm' name='contrastbtn'> Contrast </button>&nbsp;&nbsp;<span class='btn btn-info btn-sm' name='advanced'> More </span>");
+
+            //$("#clustersInfo").find("[name='contrastwithselected']").show();
+
+            targetdiv.find("[name='contrastbtn']").click(function(){
+
+                //do contrast
+                var cellids = selectednodes.join(",");
+
+                docontrast(cellids,"ALL");
+                
+
+            })
+            //
+
+
+
+
+            
+          
           }
 
            
@@ -1872,13 +2556,25 @@
                     },
                     option: function(item, escape) {
                          
-                        var path = item.path;
 
-                        path.push("<span style='color:green;'>"+item._id+"</span>");
+                        if("path" in item){
+                            var path = item.path;
 
-                        var path = path.join("->");
+                            path.push("<span style='color:green;'>"+item._id+"</span>");
+
+                            var path = path.join("->");
 
                           return '<div><span class="caption">' + path + '</span></div>';
+
+
+                        }else{
+
+
+                            return '<div><span class="caption">' + item._id + '</span></div>';
+
+                        }
+
+                        
                     }
                     
                 },
@@ -1987,10 +2683,645 @@
           }
 
 
+          function initComponents(){
+
+
+              $("#dragablediv").draggable({
+          
+                  handle: "[name='dragabledivheader']"
+              });
+
+
+              $("#dragablediv").find("[name='closedragablepanel']").click(function(){
+
+                  
+
+                  $("#dragablediv").hide(300);
+
+              });
+
+
+
+              //d3.select("body").append("div").attr("id","tooltip").style("opacity",0);
+
+
+
+          }
+
+
+          function docontrast2(clusterid,target){
+
+                $("#dragablediv").find("[name='dragablepaneltitle']").html("Contrast result");
+                $("#dragablediv").show(300);
+
+                var targetdiv = $("#dragablediv").find(".card-body");
+                startLoadingDiv(targetdiv)
+                $.ajax({
+                      url:"/contrast2",
+                      data:{"clstr":clusterid,"target":target,"sampleid":sampleObjectId},
+                      method:'post',
+                      dataType:"JSON",
+                      success:function(data){
+                        endLoadingDiv(targetdiv);
+                        //alert(JSON.stringify(data.res));
+                        var res=data.res;
+                        renderbarplotofpvalrank(res,targetdiv,clusterid,"cid",target,selectednodes);
+
+
+                        //dragablediv.
+                      },error:function(){
+
+                        //errorLoading2();
+
+                      }
+
+                })
+
+
+          }
+
+
+          function docontrast(cellids,target){
+                $("#dragablediv").find("[name='dragablepaneltitle']").html("Contrast result");
+                $("#dragablediv").show(300);
+
+                var targetdiv = $("#dragablediv").find(".card-body");
+                startLoadingDiv(targetdiv);
+
+                $.ajax({
+                      url:"/contrast",
+                      data:{"cells":cellids,"target":target,"sampleid":sampleObjectId},
+                      method:'post',
+                      dataType:"JSON",
+                      success:function(data){
+                        endLoadingDiv(targetdiv);
+                        //alert(JSON.stringify(data.res));
+                        var res=data.res;
+                        renderbarplotofpvalrank(res,targetdiv,cellids,"cells",target,selectednodes);
+
+
+                        //dragablediv.
+                      },error:function(){
+
+                        //errorLoading2();
+
+                      }
+
+                })
+
+
+
+          }
+
+
+          function addDataToClsterTable(){
+
+
+
+          }
+
+
+          function removeDataFromClsterTable(){
+
+
+
+          }
+
+
+          function UpdateDataToClsterTable(){
+
+
+            
+          }
+
+
+
+          function renderbarplotofpvalrank(data,div,data1,dttype,data2,selectedcells){
+            //$(div).html("<svg id='rankingplot' style='width:100%;'></svg>");
+            
+            var p= data.p;
+            var n = data.n;
+
+            var pdata=[];
+            var ndata=[];
+
+            var temp;
+
+            for(var i =0;i<p.length;i++){
+              var g=p[i];
+              var x =i%7;
+
+              if(x===0){
+
+                temp=[g,"","","","","",""];
+
+              }else if(x ===6){
+
+                temp[x]=g;
+                pdata.push(temp);
+                temp=[];
+
+
+              }else{
+                temp[x]=g;
+              }
+            }
+            if(temp.length>0){
+
+              pdata.push(temp);
+
+            }
+
+            p=null;
+
+            temp=[]
+            for(var i =0;i<n.length;i++){
+              var g=n[i];
+              var x =i%7;
+
+              if(x===0){
+
+                temp=[g,"","","","","",""];
+
+              }else if(x ===6){
+
+                temp[x]=g;
+                ndata.push(temp);
+                temp=[];
+
+
+              }else{
+                temp[x]=g;
+              }
+
+            }
+            if(temp.length>0){
+
+              ndata.push(temp);
+
+            }
+            n=null;
 
 
 
 
+            
+            div.html("<h6>Positive Genes</h6><table name='contrastPostable' class='table table-striped display table-bordered compact' style='width:100%;'></table><hr></hr><h6>Negative Genes</h6><table name='contrastNagtable' style='width:100%;' class='table table-striped display table-bordered compact'></table><hr></hr><div name='plotdiv'></div><hr></hr><div name='saveinfodiv'></div>");
+            var posTable=div.find("[name='contrastPostable']").DataTable({
+                searching: false,
+                info: false,
+                "ordering": false,
+                "pageLength": 5,
+                "lengthChange": false,
+                               
+                //"pagingType": "simple",
+                "scrollX": true,
+                fixedHeader: true,
+                data:pdata,
+                "columns": [
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"}, 
+                ],
+                "columnDefs": [
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 0
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                           return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 1
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 2
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                           return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 3
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                           return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 4
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 5
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                           return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 6
+                    }
+                     
+                ]
+                         
+
+            });
+            var nagTable=div.find("[name='contrastNagtable']").DataTable({
+
+                data:ndata,
+                searching: false,
+                info: false,
+                fixedHeader: true,
+                "ordering": false,
+                "pageLength": 5,
+                "lengthChange": false,
+                               
+                "scrollX": true,
+                "columns": [
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"},
+                  {"width": "14.28%"}, 
+                ],
+                "columnDefs": [
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 0
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 1
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 2
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 3
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 4
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 5
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<div style='font-size:11px;'><span class='genebtn' style='cursor:pointer;'>"+data+"</span><i canselect='F' isselected='F' class='float-right' style='cursor:pointer;color:#D3D3D3'><i class='far fa-square'></i></i></div>";
+                        },
+                        "targets": 6
+                    } 
+                     
+                ]
+              
+            });
+
+            div.find("th").hide();
+
+            div.on("click",".genebtn",function(){
+
+                div.find(".genebtn").css("color","black");
+                var gene=$(this).text();
+                $(this).css("color","steelblue");
+                var thisdiv = $(this);
+                
+                //render gene expr
+                //contrast gene search
+                //data1,dttype,data2,sampleObjectId
+
+                clearAllNodes();
+                $.ajax({
+
+                    url:"/contrastGeneSearch",
+                    data:{"sampleid":sampleObjectId,"gene":gene,"sampleid":sampleObjectId,"data1":data1,"dttype":dttype,"data2":data2},
+                    method:"post",
+                    dataType:"JSON",
+                    success:function(data){
+
+                      thisdiv.parent().find("[canselect]").attr("canselect","T").css("color","steelblue");
+                      var expr = data.expr;
+                      var plotdata = data.plot;
+
+                      var maxval =data.maxval;
+
+                      var redscale = d3.scaleLinear()
+                          .domain([0,maxval])
+                          .range(["#ff8080", "#800000"]);
+
+                      for(i in expr){
+                        
+                        d3.select("#g"+i).style("fill",redscale(expr[i]));
+                      }
+
+                      div.find("[name='plotdiv']").html("<div id='contrastbarsvgdiv'></div>");
+                      renderBarplot2("#contrastbarsvgdiv",plotdata,gene,false);
+                      //renderGenesearchPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"),gene);
+
+                      
+
+                    },
+                    error:function(){
+
+
+                    }
+
+                })
+                
+            });
+
+            div.on("click","[canselect='T']",function(){
+                var isselected = $(this).attr("isselected");
+                if(isselected==="F"){
+
+                    $(this).attr("isselected","T").html("<i class='far fa-check-square'></i>");
+                    var thisgene =  $(this).parent().find(".genebtn").text();
+                    var selectedgenes=div.find("[name='saveinfodiv']").find("[name='selectedMarks']").text().trim();
+                    selectedgenes=selectedgenes.split(",");
+
+                    var resultgenes=[];
+                    for(var i in selectedgenes){
+                      if(selectedgenes[i] !==thisgene  && selectedgenes[i] !==""){
+
+                        resultgenes.push(selectedgenes[i])
+                      }
+
+                    }
+                    resultgenes.push(thisgene);
+                    div.find("[name='saveinfodiv']").find("[name='selectedMarks']").html(resultgenes.join(","));
+
+
+
+                }else if(isselected==="T"){
+
+                    $(this).attr("isselected","F").html("<i class='far fa-square'></i>");
+
+
+                    var thisgene =  $(this).parent().find(".genebtn").text();
+                    var selectedgenes=div.find("[name='saveinfodiv']").find("[name='selectedMarks']").text().trim();
+                    selectedgenes=selectedgenes.split(",");
+
+                    var resultgenes=[];
+                    for(var i in selectedgenes){
+                      if(selectedgenes[i] !==thisgene  && selectedgenes[i] !==""){
+
+                        resultgenes.push(selectedgenes[i])
+                      }
+
+                    }
+
+                    div.find("[name='saveinfodiv']").find("[name='selectedMarks']").html(resultgenes.join(","));
+
+
+
+                }
+
+
+            });
+
+            var savestr='<span>selected Mark Genes</span><br><div name="selectedMarks" class="card card-body" style="min-height:30px;"></div>';
+
+            var userrole = sessionStorage.getItem("userrole");
+            if(userrole==="admin"){
+
+                savestr+='<br><div><span>Do you want to save this cluster ?</span>&nbsp;&nbsp;&nbsp;<button class="btn btn-success btn-sm" name="savebtn"> Save </button></div>'
+                
+
+
+            }
+
+
+            div.find("[name='saveinfodiv']").html(savestr);
+            //selectedcells
+
+
+            
+
+            
+
+
+
+
+
+            div.find("[name='saveinfodiv']").find("[name='savebtn']").click(function(){
+
+
+              $("#defaultModal").find(".modal-title").html("Cluster Editor");
+              $("#defaultModal").find(".modal-footer").html("");
+                     
+              var modalbody = $("#defaultModal").find(".modal-body");
+              modalbody.html("wait...");
+
+
+              $.ajax({
+
+                url:"/queryClstrType",
+                method:'post',
+                dataType:"JSON",
+                success:function(data){
+                        //endLoading2();
+                  var clstrtypearray=data.data;
+                  var optstr=""
+                  for(var i in clstrtypearray){
+
+                    optstr+="<option value='"+clstrtypearray[i]+"'>"+clstrtypearray[i]+"</option>";
+
+                  }
+
+
+                  var markgenesstr = div.find("[name='saveinfodiv']").find("[name='selectedMarks']").text();
+
+
+                  modalbody.html("<div><span>Cluster Type:</span><select class='form-control form-control-sm' name='clstrtypeinput'>"+optstr+"</select></div>");
+                  modalbody.append("<div><span>Cluster Name :</span><div name='clstrnameinputdiv'></div></div>");
+                  modalbody.append("<div><span>Mark Genes:</span><textarea class='form-control' name='markgenestextarea'>"+markgenesstr+"</textarea></div>");
+                  modalbody.append("<div><span>Comment:</span><textarea  type='text' class='form-control form-control-sm' name='clstrcommentinput'></textarea></div><div style='height:5px;'></div>");
+                  modalbody.append("<button name='saveclstrbtn' class='btn btn-primary btn-sm'>Save</button>");
+                  modalbody.find("[name='clstrtypeinput']").change(function(){
+
+                      var clstrtype = modalbody.find("[name='clstrtypeinput']").val();
+                      renderclusternameinput(clstrtype,modalbody.find("[name='clstrnameinputdiv']"));
+
+                  });
+                  modalbody.find("[name='clstrtypeinput']").trigger("change");
+
+                  modalbody.find("[name='saveclstrbtn']").click(function(){
+                      var name = modalbody.find("[name='clstrnameinput']").val();
+                      var type = modalbody.find("[name='clstrtypeinput']").val();
+                      var comment = modalbody.find("[name='clstrcommentinput']").val();
+                      var markgenes = modalbody.find("[name='markgenestextarea']").val();
+
+                      name = name.trim();
+                      if(name !==""){
+
+                          dosaveclstr(name,type,comment,markgenes,selectedcells,div.find("[name='saveinfodiv']"));
+                      }else{
+
+
+                        alert("input a name of cluster");
+                      }
+                      
+
+                  })
+
+
+                },error:function(){
+
+                    modalbody.html("get error from server");  
+                }
+
+
+
+              })
+
+
+              
+
+
+
+              $("#defaultModal").modal("show");
+
+
+
+
+            })//savebtn
+
+
+
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          }
+
+
+
+          function dosaveclstr(name,type,comment,markgenes,selectedcells,div){
+
+              $.ajax({
+                        url:"/savecluster",
+                        data:{"sampleid":sampleObjectId,name:name,type:type,comment:comment,"cells":selectedcells.join(","),"marks":markgenes},
+                        method:"post",
+                        dataType:"JSON",
+                        success:function(data){
+                          
+                          if(data.status==="success"){
+
+                              div.html("<span style='color:green;'>success</span>");
+                              //clusterTable
+                              var thismarkgenes= markgenes.split(",");
+                              var cid = data.cid;
+                              var color = data.color;
+
+                              var newdata={"prerender":false,name:name,marks:thismarkgenes,cid:cid,color:color}
+                              clusterTable.row.add(newdata).draw();
+                               
+
+                              $("#defaultModal").modal("hide");
+
+                          }else{
+
+                              div.html("<span style='color:red;'>save cluster error</span>");
+                              $("#defaultModal").modal("hide");
+                          }
+
+                        },
+                        error:function(){
+                            div.html("<span style='color:red;'>save cluster error</span>");
+                            $("#defaultModal").modal("hide");
+                        }
+
+
+
+              })
+
+
+
+          }//dosaveclstr end
+
+
+
+
+          function renderclusternameinput(clstr,div){
+                
+                 
+                  $.ajax({
+                      url:"/getClusterClassification",
+                      data:{"clstrType":clstr},
+                      method:'post',
+                      dataType:"JSON",
+                      success:function(data){
+                        //endLoading2();
+                        data = data.clstrTypes;
+
+                        renderClstrSelectMenu(data,div);
+
+
+                      },error:function(){
+
+                        //errorLoading2();
+
+                      }
+
+                  })
+
+
+                
+                
+
+          }
 
 
 

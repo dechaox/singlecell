@@ -40,6 +40,17 @@ def getMapDataBySampleId(request):
 
 	return JsonResponse({"tsneData":data,"clstr":clstrInfo});
 
+def getGeneSearchPlotData(request):
+	gene = request.POST.get("gene");
+	spid = request.POST.get("spid");
+	data = service.getGeneSearchPlotData(gene,spid);
+	
+	return JsonResponse({"data": data});
+
+
+def queryClstrType(request):
+	data = service.queryClstrType();
+	return JsonResponse({"data": data}); 
 
 
 def genelistSearch(request):
@@ -64,6 +75,12 @@ def genelistSearch(request):
 		if geneCount == 1:
 			gene = data[0];
 			data = service.getExprdataByGene(sampleid,data[0]);
+
+		elif geneCount ==2:
+			g1 = data[0];
+			g2 = data[1];
+
+			data = service.getExprPosCountsByGene(sampleid,g1,g2);
 			
 	elif len(gene2) == 1:
 		gene2=gene2[0];
@@ -106,7 +123,14 @@ def savecluster(request):
 	cells2 = [];
 	for i in cells:
 		cells2.append(int(i));
-	data = service.savecluster(sampleid,name,ctype,cells2,comment);
+
+	marks = request.POST.get("marks");
+	marks = marks.split(",");
+	marks2 = [];
+	for i in marks:
+		marks2.append( i );
+
+	data = service.savecluster(sampleid,name,ctype,cells2,comment,marks2);
 
 	return JsonResponse(data);
 
@@ -161,6 +185,12 @@ def updatecluster(request):
 		val = request.POST.get("val");
 		res = service.updateClusterIsPreRender(clstrid,val);
 
+	elif target =="MARKS":
+		val = request.POST.get("marks");
+		val = val.split(",")
+		res = service.updateClusterMarks(clstrid,val);
+
+
 	return JsonResponse({"res":res});
 
 
@@ -170,3 +200,67 @@ def deleteCluster(request):
 
 	return JsonResponse({"res":res});
 
+def contrast(request):
+	cells = request.POST.get("cells");
+	target = request.POST.get("target");
+	sampleid = request.POST.get("sampleid");
+
+	cells = cells.split(",");
+	
+	if target=="ALL":
+		data = service.contrastwithrest(sampleid,cells);
+
+	else:
+		clstrid = target
+		data = service.contrastCellsVsClstr(sampleid,cells,clstrid);
+		
+		#data = service.contrast()
+
+
+	return JsonResponse({"res":data});
+
+
+
+
+def contrast2(request):
+	sampleid = request.POST.get("sampleid");
+	clstr= request.POST.get("clstr");
+	target = request.POST.get("target");
+	if target=="ALL":
+		cells = service.getClusterCellsById(clstr);
+		data = service.contrastwithrest(sampleid,cells);
+
+	return JsonResponse({"res":data});
+
+
+def contrastGeneSearch(request):
+	sampleid = request.POST.get("sampleid");
+	data1 = request.POST.get("data1");
+	data2 = request.POST.get("data2");
+	gene =request.POST.get("gene");
+	dttype = request.POST.get("dttype");
+
+	if dttype =='cid':
+		name1 = service.getClusterNameById(data1);
+		data1 = service.getClusterCellsById(data1);
+		
+	else:
+		data1=service.strarrayToIntarray(data1);
+		name1 ='Selected Cells'
+
+
+	if data2 =="ALL":
+		
+		data2 = service.getClusterRestCells(sampleid,data1);
+		name2= "Others"
+
+	else:
+		name2 = service.getClusterNameById(data2);
+		data2 = service.getClusterCellsById(data2);
+
+
+	print(name1)
+
+	plotdata,expr,maxval = service.contrastGeneSearch(gene,data1,data2,sampleid,name1,name2);
+
+	return JsonResponse({"expr":expr,"plot":plotdata,"maxval":maxval});

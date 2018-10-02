@@ -1,0 +1,2706 @@
+<!DOCTYPE html>
+<html class="full-height" lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    
+    <title>Single Cell Explorer</title>    
+    {% include  "common/libx1.html"  %}
+  </head>
+
+  <style type="text/css">
+   
+    html, body{
+        min-height: 100% !important;
+        height: 100%;
+        min-width:860px;
+    }
+    
+    .node{
+
+      cursor: pointer;
+
+
+
+    }
+
+    .scattertooltip {  
+      position: absolute;     
+      
+      opacity: 0.9;
+      padding: 2px;       
+      font: 12px sans-serif;    
+      background: lightsteelblue;
+      background-opacity:0.7; 
+      border: 0px;
+      border-radius: 8px;     
+      pointer-events: none;
+      display: none;    
+         
+  }
+
+ 
+
+    .node_draw_path {
+            fill: none;
+            stroke-width: 1px;
+            stroke: #278BC5;
+    }
+     
+
+    .node_done_path {
+            fill: none;
+            stroke-width: 1px;
+            stroke: #278BC5;
+    }
+
+
+
+
+
+
+  </style>
+
+  <body>
+    <nav class="navbar navbar-light bg-light static-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">Single Cell Explorer</a>
+        <!--a class="nav-link" href="/" style='color:#0d47a1;'>Index</a>
+        <a class="btn btn-primary" href="#">Sign In</a-->
+        
+      </div>
+    </nav>
+
+
+    
+    <div style="height: 13px;"></div>
+    <div class="container-fluid" style="height: calc(100% - 87px);">
+      <div class='row h-100' style="min-height: 340px;">
+
+        <div style='width: 67%;' >
+            <div class='col-12 h-100'>
+              <div class='card h-100' id='mainpanel'>
+                   
+                  
+
+              </div>
+            </div>
+
+        </div>
+
+        <div style='width: 33%;'>
+            <div class='h-100' style="margin-right: 8px;">
+              <div class='h-100' id='infopanel'  style="overflow-y: auto;">
+                  
+
+              </div>
+            </div>
+
+        </div>
+      </div>
+
+
+    </div>
+
+
+
+
+    <div id='loadingcanvas' style="position: fixed;width: 100%;height: 100%;left:0;top:0;background :rgba(192, 192, 192, .6);z-index:9999999;display: none;" >
+        <div class="h-100" style="display: flex;justify-content: center;align-items: center;vertical-align: middle;">
+            <div class="loader">
+                  <div class="dot dot1"><i></i></div>
+                  <div class="dot dot2"><i></i></div>
+                  <div class="dot dot3"><i></i></div>
+                  <div class="dot dot4"><i></i></div>
+                  <div class="dot dot5"><i></i></div>
+                  <div class="dot dot6"><i></i></div>
+                  <div class="dot dot7"><i></i></div>
+                  <div class="dot dot8"><i></i></div>
+                  <div class="dot dot9"><i></i></div>
+            </div>
+        </div>
+
+
+
+    </div>
+
+
+    <!--div class="modal " id="LoadingModal" tabindex="-1" role="dialog" aria-hidden="true" style="background: none;border: 0;"  > 
+      <div class="modal-dialog" role="document">
+        <div class="modal-content" style='background: none;'>
+          <div class="modal-header">
+            <h5 class="modal-title">Single Cell Samples</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body" >
+              
+                
+              </div>
+          </div>
+          <div class="modal-footer">
+             
+          </div>
+        </div>
+      </div>
+    </div-->
+
+
+
+
+     
+      <div id="dragablediv" class='shadow mb-5 bg-white rounded' style="width: 600px;position: absolute;top: 100px;right: 30px;display: none;">
+        <div class='card'>
+          <div name="dragabledivheader" class="card-header" style='cursor:move;'>
+              <span name='dragablepaneltitle'></span>
+
+              <button type="button" class="close" name='closedragablepanel'>
+                <span>&times;</span>
+              </button>
+
+          </div>
+
+          <div class="card-body">
+            
+              
+
+          </div>
+          
+
+        </div>
+      </div>
+    
+
+
+     
+
+
+
+    <div class="modal " id="defaultModal" tabindex="-1" role="dialog" aria-hidden="true"  > 
+      <div class="modal-dialog" role="document">
+        <div class="modal-content" >
+          <div class="modal-header">
+            <h5 class="modal-title"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body" >
+              
+              
+          </div>
+          <div class="modal-footer">
+             
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  
+    <script type="text/javascript">
+
+      //$("#LoadingModal").modal({backdrop: 'static', keyboard: false});
+      //$("#LoadingModal").modal({backdrop: 'static',
+
+      $(function() {
+          //index model display
+          //$('#sampleListModal').modal("show");
+          initComponents();
+          renderLoginPanel();
+
+           
+          var appModel=0;
+
+
+          var defaultBG = "#f5f7f7";
+            var defaultNodeColor = "#B9B9B9"
+            var defaultR=4;
+
+            var scMainSvg;
+            var mainXscale;
+            var mainYscale;
+            var mainTransform;
+            var selectednodes;
+          var margin;
+
+
+
+          //startLoading();
+
+          var clstrs=[];
+
+
+          sampleObjectId="";
+
+          
+          function renderLoginPanel(){
+            //check if already login go to sample list;
+            //check
+            //sessionStorage.setItem('test', 'test123');
+
+            var user = sessionStorage.getItem("username");
+            var logintime = sessionStorage.getItem("logintime");
+            if(logintime===null){
+
+              logintime=0;
+            }
+            var currentdata = Date.now();
+            var timediff = currentdata-logintime;
+            
+            //sessionStorage.setItem('username', 'test123');
+            
+
+            if( (user === null || user ==="") || (timediff>1000000) ||  isNaN(timediff)  ){
+
+              //do render
+              
+              $("#infopanel").html("");
+              renderstr="<h4 style='color:steelblue;text-align:center;'>Login</h4><br>"
+              renderstr +="<div class='form-group'>";
+              renderstr+="<label>Input Name:</label><input type='text' class='form-control form-control-sm' name='usernameinput'><br>";
+              renderstr+="<label>Input Password:</label><input type='password' class='form-control form-control-sm' name='passwordinput'><br>";
+              renderstr+="<button class='btn btn-primary btn-sm' name='loginbtn'>Login</button>";
+              renderstr+="<span name='logininfo'></span>";
+              renderstr+='</div>';
+              $("#mainpanel").html("<div class='shadow p-3 mb-5 bg-white rounded' style='width:400px;margin: 0 auto;margin-top:18%;'>"+renderstr+"</div>");
+
+
+
+              $("[name='loginbtn']").click(function(){
+
+                  var username = $("[name='usernameinput']").val().trim();
+                  var password =$("[name='passwordinput']").val().trim();
+                  
+                  
+                  $.ajax({
+
+                      url:"/userLogin",
+                      data:{"username":username,"password":password},
+                      method:'post',
+                      dataType:"JSON",
+                      success:function(data){
+                        
+                        var status = data.status;
+                        if(status==="success"){
+
+                          
+                          sessionStorage.setItem("username",username);
+                          sessionStorage.setItem("logintime",Date.now() );
+                          sessionStorage.setItem("userrole",data.role );
+
+                          renderSamleList();
+
+                        }else{
+
+                          $("[name='logininfo']").html("username or password not correct");
+
+
+                        }
+
+                      },error:function(){
+
+                          $("[name='logininfo']").html("error");
+                      }
+
+
+                  })
+
+                  
+
+
+
+              })
+
+
+            }else{
+
+              //render list
+              renderSamleList();
+
+
+            }
+          }
+
+
+
+
+
+          function renderSamleList(){
+
+            startLoading2();
+
+            $.ajax({
+
+                url:"/getSampleLists",
+                data:{"userid":"userid"},
+                method:'post',
+                dataType:"JSON",
+                success:function(data){
+                  endLoading2();
+                  var samples = data.samples;
+                  $("#mainpanel").html("<div style='overflow-y:auto;'><ul class='list-group'</ul></div>");
+
+
+                  var splistul = $("#mainpanel").find("ul")
+                  for(i in samples){
+                    var sp = samples[i];
+                    splistul.append("<li class='list-group-item'><a value='"+sp["_id"]+"' name='linkbtn' style='color:#0d47a1;cursor:pointer;'>"+sp["name"]+"</a>,<span>"+sp["source"]+"</span>,<span>"+sp["tissue"]+"</span>,<span>"+sp["subjectid"]+"</span>,<span>"+sp["disease"]+"</span></li>");
+
+                  }
+
+                  clicksamplelinkforMap();
+
+
+                },error:function(){
+
+                  errorLoading2();
+
+                }
+
+
+            })
+
+
+
+
+          }
+
+
+
+          function clicksamplelinkforMap(){
+
+            $("[name='linkbtn']").click(function(){
+
+                sampleObjectId= $(this).attr("value");
+
+                clstrs=[];
+                
+                startLoading2();
+                
+                $.ajax({
+
+                    url:"/getMapDataBySampleId",
+                    data:{"sampleid":sampleObjectId},
+                    method:"post",
+                    dataType:"JSON",
+                    success:function(data){
+                      var tsnedt = data.tsneData;
+                      clstrs = data.clstr;
+
+                      renderInfoPanel("#infopanel");
+                      renderTsneMap(tsnedt,"#mainpanel");
+
+                     
+
+                    },
+                    error:function(){
+
+
+
+                    }
+
+
+                })
+
+            });
+
+
+
+          }
+          
+
+          function renderclstrtable(div,clstrtype){
+            
+            //alert(JSON.stringify(clstrs))
+            //style='border-color:blue;border-style: solid;overflow-x:scroll;'
+            div.html("<br><div style='overflow-x:auto;'><table class='table table-striped display table-bordered' name='clusterdetailtable' style='width:100%;font-size:12px;' setlabelname='' setlabelid=''><thead style='display :none;'></thead><tbody> </tbody> </table></div>");
+            var tablediv = div.find("[name='clusterdetailtable']");
+            
+
+            var userrole = sessionStorage.getItem("userrole");
+
+
+            //alert(JSON.stringify(clstrs))
+            //prerender
+            //check, name,marks,action
+            for(var x in clstrs){
+              for(var i in clstrs[x]){
+
+                
+
+                var temp = clstrs[x][i];
+
+                var prerenderTF = "F";
+                if(temp["prerender"]===true ){
+                  prerenderTF='T';
+                }
+
+
+                tempstr ="<tr clstrtype='"+x+"' precheck='"+prerenderTF+"'>"
+                tempstr+="<td colored='F' cid='"+temp["_id"]+"' ischecked='F'><i class='far fa-square' style='color: steelblue;cursor:pointer;'></i></td>"
+                tempstr+="<td cname='"+temp["clstrName"]+"' style='color:"+temp["color"]+";cursor:default;'>"+temp["clstrName"]+"</td>";
+                
+                if("marks" in temp){
+
+                    var markslist = temp["marks"];
+
+                    var markstr=""
+                    for(var g in markslist){
+                      var gg=markslist[g];
+
+                      markstr+="<span name='fitedgene' style='cursor:pointer;'>"+g+"</span>,"
+
+                    }
+                    tempstr+="<td name='marks'>"+markstr+"</td>";
+                    markstr=null;
+
+                }else{
+
+
+                    tempstr+="<td name='marks'> </td>";
+
+                }
+
+
+                /*
+                tempstr+="<td name='contrastaction'><button class='btn btn-sm btn-primary' name='contrastglobal' style='font-size:11px;display:inline-block;color:white;'>Contrast</button>&nbsp;<button class='btn btn-sm btn-info' name='contrastwithselected' style='font-size:11px;display:inline-block;display:none;'>Contrast Selected</button></td>";
+                */
+                tempstr+="<td name='contrastaction'><button class='btn btn-sm btn-primary' name='contrastglobal' style='font-size:11px;display:inline-block;color:white;'>Contrast</button></td>";
+                
+                if(userrole==="admin"){
+                  
+                  tempstr+="<td name='adminaction'>" + "<button class='btn btn-sm btn-primary' name='adminclstr' style='font-size:11px;display:inline-block;color:white;'><i class='fas fa-cog'></i></button>"+ "<div name='adminactionbtns' style='display:none;'><button class='btn btn-sm btn-warning' name='editclstr' style='font-size:11px;display:inline-block;color:white;'><i class='fas fa-edit'></i></button>&nbsp;<button class='btn btn-sm btn-danger' name='deleteclstr' style='font-size:11px;display:inline-block;'><i class='fas fa-trash-alt'></i></button>&nbsp;<button class='btn btn-sm btn-primary' name='labeltoclstr' style='font-size:11px;display:inline-block;'>Set Label</button></div>"+"</td>";
+
+                }
+
+                
+                tempstr +="</tr>"
+                div.find("tbody").append(tempstr);
+
+              }
+            }
+
+
+            div.find("tbody").find("[clstrtype]").hide();
+            div.find("[clstrtype='"+clstrtype+"']").show();
+
+
+
+            div.on("click","[name='adminclstr']",function(){
+                var thisdiv = $(this).parent();
+                thisdiv.find("[name='adminactionbtns']").show();
+                thisdiv.find("[name='adminclstr']").hide();
+                
+            })
+
+            div.on("mouseleave","[name='adminaction']",function(){
+                  var thisdiv = $(this);
+                  thisdiv.find("[name='adminactionbtns']").hide();
+
+                  thisdiv.find("[name='adminclstr']").show();
+
+
+
+            })
+
+
+            
+
+
+            div.on("click","[name='editclstr']",function(){
+
+
+
+                var thistr = $(this).parent().parent();
+                
+                var clstrid =thistr.find("[cid]").attr("cid");
+                
+                var cname =thistr.find("[cname]").attr("cname");
+                var thismarks = [];
+
+                thistr.find("[name='marks']").find("[name='fitedgene']").each(function(){
+
+                  thismarks.push($(this).text());
+
+                });
+                thismarks = thismarks.join(",");
+
+
+                var prechecked = thistr.attr("precheck");
+
+
+
+
+                $("#defaultModal").modal("show");
+
+
+                $("#defaultModal").find(".modal-title").html("Cluster Editor");
+                $("#defaultModal").find(".modal-footer").html("");
+                     
+
+                var modalbody = $("#defaultModal").find(".modal-body");
+
+                //new cluster name
+                modalbody.html("<div>New cluster name:</div><div name='newnameinputdiv' class='input-group'><input name='newnameinput' class='form-control' type='text' placeholder='"+cname+"'><div class='input-group-append'><span class='input-group-text btn savebtn'>save</span></div></div>");
+
+                var iconstr="<i class='far fa-square'></i>";
+                if(prechecked==="T"){
+                  iconstr="<i class='far fa-check-square'></i>";
+                }
+
+                modalbody.append("<br><div><span style='color:steelblue;cursor:pointer;'  isprecheck='"+prechecked+"'>"+iconstr+"</span>&nbsp;&nbsp;<span>Precheck</span></div>");
+
+                modalbody.append("<br><div><div>Gene Marks:</div><div name='marksinputdiv' class='input-group'><input name='marksinput' class='form-control' type='text' placeholder='"+thismarks+"'><div class='input-group-append'><span class='input-group-text btn markssavebtn'>save</span></div></div></div>");
+
+
+
+
+                modalbody.find("[isprecheck]").click(function(){
+
+                    var isprechecksetdiv=$(this);
+                    var val = $(this).attr("isprecheck");
+                    var newval=""
+                    if(val ==="F"){
+                      newval="T"; 
+
+                    }else if(val==='T'){
+                      newval='F';
+
+                    }
+
+                    if(newval !==""){
+
+                        $.ajax({
+                                  url:"/updatecluster",
+                                  data:{"target":"prerender","clstrid":clstrid,"val":newval},
+                                  method:"post",
+                                  dataType:"JSON",
+                                  success:function(data){
+                                      isprechecksetdiv.attr("isprecheck",newval);
+                                      thistr.attr("precheck",newval)
+                                      if(newval==="T"){
+
+                                          isprechecksetdiv.html("<i class='far fa-check-square'></i>")
+
+                                      }else if(newval==="F"){
+
+                                          isprechecksetdiv.html("<i class='far fa-square'></i>")
+
+                                      }
+                                     
+          
+                                  },
+                                  error:function(){
+
+
+                                      alert("save error")
+                                  }
+
+
+
+                        })
+
+                    }
+
+
+                });
+
+                modalbody.find("[name='marksinputdiv']").find(".markssavebtn").click(function(){
+
+
+                    alert("this function update soon")
+
+
+                });
+
+
+                modalbody.find("[name='newnameinputdiv']").find(".savebtn").click(function(){
+
+
+                          var newname = modalbody.find("[name='newnameinputdiv']").find("[name='newnameinput']").val();
+                          newname = newname.trim();
+                          if(newname.length>0 && (newname !==cname)){
+                              $.ajax({
+                                  url:"/updatecluster",
+                                  data:{"target":"NAME","clstrid":clstrid,"name":newname},
+                                  method:"post",
+                                  dataType:"JSON",
+                                  success:function(data){
+                                    
+                                    $("#defaultModal").modal("hide");
+                                    $("#mainsvg").find("[name='clstr"+clstrid+"']").text(newname);
+                                    thistr.find("[cname]").attr("cname",newname).text(newname);
+                                     
+          
+                                  },
+                                  error:function(){
+
+
+                                      alert("save error")
+                                  }
+
+
+
+                              }) 
+
+                          }
+
+                })
+                //////////////////
+                
+            })
+
+            div.on("click","[name='labeltoclstr']",function(){
+            
+
+                appModel="editor";
+
+                var thistr = $(this).parent().parent();
+                var clstrid =thistr.find("[cid]").attr("cid");
+                
+                var cname =thistr.find("[cname]").attr("cname");
+
+                div.find("[setlabelname]").attr("setlabelname",cname);
+
+                div.find("[setlabelid]").attr("setlabelid",clstrid);
+
+            })
+
+            div.on("click","[name='deleteclstr']",function(){
+            
+
+                var thistr = $(this).parent().parent();
+                
+                var clstrid =thistr.find("[cid]").attr("cid");
+                
+                var cname =thistr.find("[cname]").attr("cname");
+
+                $("#defaultModal").find(".modal-title").html("");
+                //$("#defaultModal").find(".modal-footer").html("");
+
+                //$("#defaultModal").find(".modal-header").hide();
+
+
+                $("#defaultModal").find(".modal-body").html("<span>Delete Cluster <b>"+cname+"</b>?</span> &nbsp;&nbsp; <span class='btn btn-sm btn-danger' name='yes'>Yes</span>&nbsp;&nbsp;<span class='btn btn-sm btn-secondary' name='no'>No</span>")
+                $("#defaultModal").modal("show");
+
+
+                $("#defaultModal").find("[name='no']").click(function(){
+
+                    $("#defaultModal").modal("hide");
+
+                });
+
+                
+                $("#defaultModal").find("[name='yes']").click(function(){
+                    $.ajax({
+                          url:"/deleteCluster",
+                          data:{ "clstrid":clstrid },
+                          method:"post",
+                          dataType:"JSON",
+                          success:function(data){
+                            
+                              $("#defaultModal").modal("hide");
+
+                              thistr.remove();
+                              
+                              $(".node[clstr='"+cname+"']").removeAttr("clstr").css("fill",defaultNodeColor);
+            
+                              $("#mainsvg").find("[name='clstr"+clstrid+"']").remove();
+
+                              
+                          },
+                          error:function(){
+
+
+                              alert("save error")
+                          }
+
+
+
+                    });
+                    
+
+                });
+
+                
+              
+            })
+
+            div.on("click","[name='contrastwithselected']",function(){
+
+
+                var cellids = selectednodes.join(",");
+                //docontrast2(cellids,"ALL");
+                var cid = $(this).parent().parent().find("[cid]").attr("cid");
+                docontrast(cellids,cid);
+
+
+
+            });
+
+            div.on("click","[name='contrastglobal']",function(){
+                //targetdiv.find("[name='contrastbtn']").click(function(){
+
+                //do contrast
+                //var cellids = selectednodes.join(",");
+                var cid = $(this).parent().parent().find("[cid]").attr("cid");
+                docontrast2(cid,"ALL");
+                
+
+
+              
+              
+            });
+            //
+
+
+            div.on("click","[cid]",function(){
+                
+                var thisdiv = $(this);
+                var cid = $(this).attr("cid");
+                var color = $(this).parent().find("[cname]").css("color");
+                var colored = $(this).attr("colored");
+                var checked = $(this).attr("ischecked");
+                var cname = $(this).parent().find("[cname]").attr("cname");
+                
+                if(checked === "F"){
+
+                  if(colored ==="F"){
+                    
+                    $.ajax({
+                        url:"/queryClstrCellsAndLabelByCid",
+                        data:{"cid":cid},
+                        method:"post",
+                        dataType:"JSON",
+                        
+                        success:function(res){
+
+                          var cellids = res.cellids;
+                          for(var i in cellids){
+
+                            d3.select("#g"+cellids[i]).attr("clstr",cname).style("fill",color);
+
+                          }
+
+                          thisdiv.attr("colored","T");
+                          thisdiv.html("<i class='far fa-check-square' style='color: steelblue;cursor:pointer;'></i>");
+                          thisdiv.attr("ischecked","T");
+
+                          var islabeled = res.labeled;
+
+                          if(islabeled  === true){
+                            var x2 = res["x"];
+                            
+                            var y2 = res["y"];
+                            var name = res["name"];
+                             
+                            scMainSvg.append("text").attr("class","clstrlabel").attr("name","clstr"+cid).text(name).attr("x",mainXscale(x2)+margin).attr("y",mainYscale(y2)+margin);
+                          }
+
+                         
+
+                        },
+                        error:function(){
+
+                          alert("error")
+
+                        }
+
+
+                    })
+
+
+
+
+                  }else if(colored==="T"){
+                    
+                    $(".node[clstr='"+cname+"']").css("fill",color);
+
+                    thisdiv.html("<i class='far fa-check-square' style='color: steelblue;cursor:pointer;'></i>");
+                    thisdiv.attr("ischecked","T");
+                    $("[name='clstr"+cid+"']").show();
+
+                  }
+
+
+                }else if(checked === "T"){
+
+                    $(".node[clstr='"+cname+"']").css("fill",defaultNodeColor);
+                    thisdiv.html("<i class='far fa-square' style='color: steelblue;cursor:pointer;'></i>");
+
+                    thisdiv.attr("ischecked","F");
+                    $("[name='clstr"+cid+"']").hide();
+                }
+
+            })
+            
+            autocheckClusters(clstrtype,div.find("[name='clusterdetailtable']"));
+          }//renderclstrtable
+
+
+
+          function autocheckClusters(targetClstrtype,clusterpanel){
+
+              startLoading2();
+              setTimeout(function(){
+                 
+                  var checkedtrlist=[];
+                  var prerendertrlist=[];
+                  clusterpanel.find("[clstrtype='"+targetClstrtype+"']").each(function(){
+
+
+                      var tr = $(this);
+                      var isprerender = $(this).attr("precheck");
+                      if(isprerender==="T"){
+
+                        prerendertrlist.push(tr);
+                      }
+
+                      var ischecked=tr.find("[ischecked]").attr("ischecked");
+                      if(ischecked==="T"){
+
+                        checkedtrlist.push(tr);
+                      }
+                  })
+
+
+                  if(checkedtrlist.length>0){
+
+                    for(var i in checkedtrlist){
+
+                      checkedtrlist[i].find("[cid]").trigger("click");
+                      //checkedtrlist[i].find("[cid]").trigger("click");
+                    }
+
+                    for(var i in checkedtrlist){
+
+                      checkedtrlist[i].find("[cid]").trigger("click");
+                      //checkedtrlist[i].find("[cid]").trigger("click");
+                    }
+
+                  }else if(prerendertrlist.length>0){
+
+
+                    for(var i in prerendertrlist){
+
+                      prerendertrlist[i].find("[cid]").trigger("click");
+                      //checkedtrlist[i].find("[cid]").trigger("click");
+                    }
+                    console.log("check");
+                    for(var i in prerendertrlist){
+
+                      prerendertrlist[i].find("[cid]").trigger("click");
+                      //checkedtrlist[i].find("[cid]").trigger("click");
+                    }
+                  }
+                  checkedtrlist=null;
+                  prerendertrlist=null;
+
+                  endLoading2();
+
+
+
+              },1)
+              
+
+              
+
+
+          }
+
+          function clearAllNodes(){
+
+            $(".node").css("fill",defaultNodeColor);//.removeAttr("clstr");
+            $("#genesearch").find("[name='genesearchdetails']").find("[name='genesearchplot']").html("");
+            //$("#clustersInfo").find("[cid]").html("<i class='far fa-square' style='color: steelblue;cursor:pointer;'></i>");
+
+
+
+          }
+          function clearClusterState(){
+
+            $(".node[clstr]").css("fill",defaultNodeColor).removeAttr("clstr");
+            $(".clstrlabel").remove();
+            $("#clustersInfo").find("[colored='T']").attr("colored","F");
+
+          }
+
+          function renderInfoPanel(div_id){
+
+            /*
+             <ul id="tabs" class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a id="tab-A" href="#pane-A" class="nav-link active" data-toggle="tab" role="tab">–A–</a>
+                </li>
+                <li class="nav-item">
+                    <a id="tab-B" href="#pane-B" class="nav-link" data-toggle="tab" role="tab">–B–</a>
+                </li>
+                <li class="nav-item">
+                    <a id="tab-C" href="#pane-C" class="nav-link" data-toggle="tab" role="tab">–C–</a>
+                </li>
+            </ul>
+
+            */
+
+
+            var panelstr='<ul class="nav nav-tabs">';
+              panelstr+='<li class="nav-item">';
+                panelstr+='<a class="nav-link active" data-toggle="tab" href="#genesearch">Gene search</a>';
+
+              panelstr+='</li>';
+              panelstr+='<li class="nav-item">';
+                panelstr+='<a class="nav-link" data-toggle="tab" href="#clustersInfo">Clusters</a>';
+              panelstr+='</li>';
+              panelstr+='<li class="nav-item">';
+                panelstr+='<a class="nav-link" data-toggle="tab" href="#calculation">Calculation</a>';
+              panelstr+='</li>';
+            panelstr+='</ul>';
+
+
+            panelstr+='<div class="tab-content">';
+              panelstr+='<div id="genesearch" class="tab-pane active"><br><div name="tabcontent"></div>';
+
+              panelstr+='</div>';
+
+              panelstr+='<div id="clustersInfo" class="tab-pane fade"><br><div name="tabcontent"></div>';
+
+              panelstr+='</div>';
+
+              panelstr+='<div id="clstrcalculation" class="tab-pane fade"><br><div name="tabcontent"></div>';
+
+              panelstr+='</div>';
+            panelstr+='</div>';
+              
+            
+            
+
+
+            /*
+            var panelstr='';
+
+              panelstr+='<div class="card">';
+                panelstr+='<div class="card-header">';
+                  panelstr+='<a class="card-link" data-toggle="collapse" href="#genesearch">Gene search</a>'
+                panelstr+='</div>';
+                panelstr+='<div id="genesearch" class="collapse show"  data-parent="#infopanel">';
+                  panelstr+='<div class="card-body"></div>';
+                panelstr+='</div>';
+
+              panelstr+='</div>';
+              ////
+
+              panelstr+='<div class="card">';
+                panelstr+='<div class="card-header">';
+                  panelstr+='<a class="card-link" data-toggle="collapse" href="#clustersInfo">Clusters</a>'
+                panelstr+='</div>';
+                panelstr+='<div id="clustersInfo" class="collapse"  data-parent="#infopanel">';
+                  panelstr+='<div class="card-body"></div>';
+                panelstr+='</div>';
+
+              panelstr+='</div>'
+              
+            */
+ 
+
+            $(div_id).html(panelstr);
+
+
+
+
+            
+            var genesearchpanel = $(div_id).find("#genesearch").find("[name='tabcontent']");
+
+
+            var clusterpanel = $(div_id).find("#clustersInfo").find("[name='tabcontent']");
+            
+            var calculationpanel = $(div_id).find("#clstrcalculation").find("[name='tabcontent']");
+            
+            
+            //alert(JSON.stringify(clstrs))
+
+            clusterpanel.html("<div><select name='clsterswitch' class='form-control form-control-sm'></select></div><div name='clstrdetail' style='width:100%;'></div><hr></hr><div name='sellectcelldiv'>Select Cells</div>");
+            var clsterswitch = clusterpanel.find("[name='clsterswitch']");
+            for(var  i in clstrs){
+
+              clsterswitch.append("<option value='"+i+"'>"+i+"</option>");
+
+            }
+            
+
+
+            clsterswitch.on("change",function(){
+
+
+                var val = $(this).val();
+                clusterpanel.find("[clstrtype]").hide();
+                clusterpanel.find("[clstrtype='"+val+"']").show();
+                clearClusterState();
+
+                autocheckClusters(val,clusterpanel.find("[name='clstrdetail']"));
+                
+
+
+            })
+
+
+            renderclstrtable( clusterpanel.find("[name='clstrdetail']"),clsterswitch.val())
+
+
+
+            genesearchpanel.html("<textarea name='genesearcharea' rows='4' style='width:100%;max-width:200px;'></textarea><br>")
+            genesearchpanel.append("<button name='genesearchbtn' class='btn btn-primary btn-sm'>search</button><hr></hr><div name='genesearchdetails'></div>")
+            
+            genesearchpanel.find("[name='genesearchbtn']").click(function(){
+              var genestr = genesearchpanel.find("[name='genesearcharea']").val();
+              genestr = genestr.replace(/ /gi,"").replace(/\n/gi,",").toUpperCase();
+
+              if(genestr.length>0){
+                  clearAllNodes();
+
+                  $.ajax({
+
+                      url:"/genelistSearch",
+                      data:{"sampleid":sampleObjectId,"genestr":genestr},
+                      method:"post",
+                      dataType:"JSON",
+                      success:function(res){
+                         
+
+                        var data= res.res;
+                        var geneCount = res.count;
+
+                        if(geneCount===1){
+
+                          var gene = res.gene;
+                          var maxval = res.maxval;
+
+                          
+                                  var redscale = d3.scaleLinear()
+                                    .domain([0,maxval])
+                                    .range(["#ff8080", "#800000"]);
+
+                           
+
+                          //var redscale =d3.scaleSequential(d3["interpolateReds"]).domain([0, maxval]);
+
+                          for(i in data){
+                            d3.select("#g"+i).style("fill",redscale(data[i]));
+
+
+                          }
+
+                          genesearchpanel.find("[name='genesearchdetails']").html("<div name='genesearchplot'></div>");
+                          renderGenesearchPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"),gene);
+                        }else if(geneCount ===0){
+
+                          genesearchpanel.find("[name='genesearchdetails']").html("gene not found");
+
+
+                        }else{
+
+                          genesearchpanel.find("[name='genesearchdetails']").html("<table name='genesearchrestable' class='display table table-striped table-bordered compact' style='width:100%;'><thead style='display:none;'><tr><th></th><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody style='font-size:11px;'></tbody></table><hr></hr><div name='genesearchplot'></div>");
+
+                          
+
+                          var index =0;
+                          var tablestr ="";
+                          for(var i in data){
+                            if(index===0){
+                              tablestr+='<tr>';
+                            }
+
+                            tablestr+="<td><span name='fitedgene' style='cursor:pointer;'>"+data[i]+"</span></td>"
+
+                            index+=1;
+                            if(index ===6){
+
+                              tablestr+='</tr>';
+                              index = 0;
+                            }
+
+
+
+                          }
+
+
+                          if(index!==0){
+                            for(var i=index;i<6;i++){
+
+                                tablestr+="<td></td>"
+                            }
+                            tablestr+='</tr>'
+
+                          }
+
+                          genesearchpanel.find("[name='genesearchrestable']").find("tbody").html(tablestr);
+
+                          genesearchpanel.find("[name='genesearchrestable']").DataTable( {
+                              searching: false,
+                              info: false,
+                              "ordering": false,
+                              "pageLength": 5,
+                              "lengthChange": false,
+                               
+                              "pagingType": "simple",
+                              "scrollX": true
+
+                          })
+
+
+                          
+
+                        }
+
+
+                        genesearchpanel.on("click","[name='fitedgene']",function(){
+
+                            var newgstr = $(this).text();
+                            var newdiv= $(this);
+                            $.ajax({
+
+                                url:"/genelistSearch",
+                                data:{"sampleid":sampleObjectId,"genestr":newgstr},
+                                method:"post",
+                                dataType:"JSON",
+                                success:function(res2){
+
+                                  genesearchpanel.find("[name='fitedgene']").css("color","black").attr("genechecked","F");
+                                  newdiv.css("color","steelblue").attr("genechecked","T");
+
+
+                                  $(".node").css("fill",defaultNodeColor);//.removeAttr("clstr");
+                                  var newdt = res2.res;
+                                  var maxval = res2.maxval;
+
+
+                                 
+                                  var redscale = d3.scaleLinear()
+                                    .domain([0,maxval])
+                                    .range(["#ff8080", "#800000"]);
+
+                                  
+
+                                  //var redscale =d3.scaleSequential(d3["interpolateReds"]).domain([0, maxval]);
+
+
+                                  for(i in newdt){
+                                    d3.select("#g"+i).style("fill",redscale(newdt[i]) );
+
+
+                                  }
+
+
+                                  renderGenesearchPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"),newgstr);
+
+
+                                },error:function(){
+
+                                  alert("server error")
+                                }
+
+                            });
+
+
+                        })
+                        
+                        
+
+
+
+                      },
+                      error:function(){
+
+
+
+                      }
+
+
+
+                  })
+
+              }
+
+
+            })
+            
+            //gene serch btn end
+
+            $("#clustersInfo").on('shown.bs.collapse', function(){
+                 var thisdiv = $("#clustersInfo").find("table").find("tbody");
+                 clearAllNodes();
+                 thisdiv.find("[ischecked='T']").each(function(){
+                    var cid = $(this).attr("cid");
+                    var color = $(this).parent().find("[cname]").css("color");
+                    var cname = $(this).parent().find("[cname]").attr("cname");
+                    $(".node[clstr='"+cname+"']").css("fill",color);
+
+
+                 })
+
+
+            });
+
+
+            $("#genesearch").on('shown.bs.collapse', function(){
+
+              var temp = $("#genesearch").find("[name='fitedgene'][genechecked='T']");
+
+              if(temp.length===1){
+
+                temp.trigger("click");
+
+              }else{
+
+                 if($("#genesearch").find("[name='genesearchrestable']").length===1){
+
+                 }else{
+
+                    $("#genesearch").find("[name='genesearchbtn']").trigger("click");
+                 }
+                
+                
+
+              } 
+
+            });
+
+
+
+            /*
+            $("#CellSelection").on('shown.bs.collapse', function(){
+
+                appModel="editor";
+                
+            });
+
+            $("#CellSelection").on('hidden.bs.collapse', function(){
+
+                appModel=0;
+                
+            });
+            */
+            
+
+          }//render info panel
+
+
+  
+ 
+
+
+          function renderTsneMap(data,div_id){
+
+
+            $(div_id).css("background",defaultBG).html("");
+
+            var width = $(div_id).width();
+            var height = $(div_id).height();
+
+            
+
+            margin = 20;
+            var size = Math.floor(d3.min([width,height]));
+            size = size- 2*margin ;
+            
+            scMainSvg = d3.select(div_id).append('svg').attr("id","mainsvg")
+              .attr('width', width )
+              .attr('height', height );
+
+
+            //scMainSvg.append("rect").attr("x",0).attr("y",0).attr("width",100).attr("height",100).style("fill","#777777")
+
+
+            
+            var xrange=[0,0];
+            var yrange=[0,0];
+            for(var i in data){
+              let tempx = data[i].x;
+              let tempy = data[i].y;
+              
+              if(tempx < xrange[0]){
+                xrange[0]=Math.floor(tempx);
+              }else if(tempx > xrange[1]){
+                xrange[1]=Math.ceil(tempx);
+              }
+
+              if(tempy < yrange[0]){
+                yrange[0]=Math.floor(tempy);
+              }else if(tempy > yrange[1]){
+                yrange[1]=Math.ceil(tempy);
+              }
+
+            }
+
+
+            //xrange[0]=xrange[0]-1;
+            //xrange[1]=xrange[1]+1;
+
+            //yrange[0]=yrange[0]-1;
+            //yrange[1]=yrange[1]+1;
+
+
+            mainXscale = d3.scaleLinear()
+            .domain(xrange)
+            .range([0, size]);
+
+
+
+            mainYscale = d3.scaleLinear()
+            .domain(yrange)
+            .range([size, 0]);
+
+            renderNodes()
+            //data=null;
+
+            function renderNodes(){
+
+              setTimeout(function(){
+                var count=1500;
+
+                while(count >0 && data.length>0){
+                  count-=1;
+                  var datalength = data.length;
+                  var i = datalength-1;
+
+                  var gid = "g"+data[i]["order"];
+                  var x = mainXscale(data[i].x)+margin;
+                  var y = mainYscale(data[i].y)+margin;
+                  data.pop();
+
+                  scMainSvg.append("circle").attr("id",gid).attr("class","node").attr("cx",x).attr("cy",y).attr("r",defaultR)
+                      .style("fill",defaultNodeColor)
+                      .style("fill-opacity",0.5)
+                      .style("stroke-width",0.5)
+                      .style("stroke","white");
+
+                  if(data.length>0){
+
+
+                    renderNodes();
+                  }else{
+
+                    renderLabel();
+                    renderActions();
+                    endLoading2();
+
+                  }
+
+                }
+
+
+
+
+
+              },1)
+
+            }
+            //alert(JSON.stringify(data))
+
+           
+            
+            //render label;
+            function renderLabel(){
+
+                /*
+                d3.selectAll(".clstrlabel").remove();
+                $.ajax({
+
+
+
+
+                })
+                */
+            }
+            
+            function renderActions(){
+              selectednodes=[];
+
+              var coords =[];
+              var selectedline =d3.line();
+              //var ori_coords=[];
+
+              var cell_nodes=d3.selectAll(".node");
+
+              var dragStart = function(){
+
+                cell_nodes.classed("selected", false);
+
+                coords = [];
+                   
+                d3.selectAll(".node_draw_path").remove();
+                d3.selectAll(".node_done_path").remove();
+                  
+                cell_nodes.style("stroke","white").style("stroke-width",0.5);
+                  
+                
+                //renderfunction
+                $("#clustersInfo").find("[name='sellectcelldiv']").html("Select lasso");
+
+                $("#clustersInfo").find("[name='contrastwithselected']").hide();
+
+              }
+              var drawPath = function(isdone) {
+                if(coords.length>1){
+
+
+                  scMainSvg.append("path").attr("class",'node_draw_path').attr( "d",selectedline([coords[coords.length-2],   coords[coords.length-1] ]));
+
+                  if (isdone) {
+
+                    coords = coords.concat([coords[0]]);
+
+                    scMainSvg.append("path").attr("class","node_done_path").attr("d", selectedline(coords ) );
+
+                    scMainSvg.selectAll(".node_draw_path").remove();
+
+
+                    cell_nodes.each(function(d, i) {
+                      point = [d3.select(this).attr("cx"), d3.select(this).attr("cy")];
+                      if (pointInPolygon(point, coords)) {
+                        d3.select(this).classed("selected", true);
+
+                      }
+
+                    });
+
+                    selectPath();
+                  }
+
+                }
+              }
+
+              var selectPath = function(){
+
+
+                let templen =$(".node.selected").length;
+
+                if(templen>0){
+
+                  selectednodes = [];
+                  $(".node.selected").each(function(){
+                    selectednodes.push(Number($(this).attr("id").substring(1)));
+                    
+                    $(this).css("stroke","#278BC5").css("stroke-width",1);;
+                  })
+
+                  execafterselected(selectednodes);
+                  
+                  
+                }else{
+                  $(".node").css("stroke","white").css("stroke-width",0.5);
+                    //$("[name='cellselectinfo']").html("");
+                  dragStart();
+
+                }
+              }
+
+
+              var dragMove = function() {
+                cell_nodes.classed("selected", false);
+                let tempcoord = d3.mouse(this);
+
+
+                //tempcoord[0] = tempcoord[0]-gtranslate[0];
+                //tempcoord[1] = tempcoord[1]-gtranslate[1];
+                
+                //tempcoord[0] = tempcoord[0]-margin;
+                //tempcoord[1] = tempcoord[1]-margin;
+                if(coords.length>0){
+                  let lastcoord = coords[coords.length-1];
+                  if(Math.abs(lastcoord[0]-tempcoord[0])+ Math.abs(lastcoord[1]-tempcoord[1]) >2){
+                    coords.push(tempcoord);
+                    drawPath();
+
+                  }
+                }else{
+                  coords.push(tempcoord);
+                  drawPath();
+                }
+
+              }
+                
+
+              var dragEnd = function() {
+                drawPath(true);
+
+              }
+
+              svgDrag = d3.drag().on("start", dragStart).on("drag", dragMove).on("end", dragEnd);
+              scMainSvg.call(svgDrag)
+
+
+            }
+           
+
+            //drag end;
+
+
+            //
+
+            scMainSvg.on("dblclick",function(){
+
+                if(appModel==="editor"){
+
+                    var coordinates = [0, 0];
+                    coordinates = d3.mouse(this);
+                    var x = coordinates[0];
+                    var y = coordinates[1];
+
+
+                    x = x-margin;
+                    y = y-margin;
+
+                    /*
+                    if(mainTransform!==undefined){
+                      x = mainTransform.invertX(x);
+                      y = mainTransform.invertY(y);
+
+                    }
+                    */
+                    var x2 = mainXscale.invert(x);
+                    var y2 =  mainYscale.invert(y);
+
+
+
+                    $("#defaultModal").modal("show");
+
+
+                    $("#defaultModal").find(".modal-title").html("");
+                    $("#defaultModal").find(".modal-footer").html("");
+                     
+
+                    var modalbody = $("#defaultModal").find(".modal-body");
+                    
+                    modalbody.html("<div>Set Cluster Label here?  &nbsp;&nbsp; <span class='btn btn-sm btn-success' name='yes'>Yes</span>&nbsp;&nbsp;<span class='btn btn-sm btn-secondary' name='no'>No</span></div>");
+
+                    var setlabelname = $("#clustersInfo").find("[setlabelname]").attr("setlabelname");
+                    var setlabelid = $("#clustersInfo").find("[setlabelid]").attr("setlabelid");
+                    modalbody.find("[name='no']").click(function(){
+
+
+                        //appModel=0;
+
+                        //$("#clustersInfo").find("[setlabelname]").attr("setlabelname");
+
+                        $("#defaultModal").modal("hide");
+
+                    });
+
+                    modalbody.find("[name='yes']").click(function(){
+
+                        var clstrid =setlabelid;
+                        var clstrText = setlabelname;
+                        $.ajax({
+                            url:"/updatecluster",
+                            data:{"target":"POS","clstrid":clstrid,"x":Number(x2),"y":Number(y2)},
+                            method:"post",
+                            dataType:"JSON",
+                            success:function(data){
+                              
+                               $("#defaultModal").modal("hide");
+
+                                scMainSvg.append("text").attr("class","clstrlabel").attr("name","clstr"+clstrid).text(clstrText).attr("x",mainXscale(x2)+margin).attr("y",mainYscale(y2)+margin);
+
+                                appModel=0;
+                                $("#clustersInfo").find("[setlabelname]").attr("setlabelname","");
+                                $("#clustersInfo").find("[setlabelid]").attr("setlabelid","");
+                            },
+                            error:function(){
+
+
+                                alert("save error")
+                            }
+
+
+
+                        }) 
+
+
+                        
+
+                    });
+
+
+
+                    
+                     //need delete
+ 
+                    modalbody.find("[name='setclstrlabelhere']").click(function(){
+                      var clstrid = modalbody.find("[name='saveclstrposselect']").val();
+                      var clstrText = tempdata2[clstrid];
+                      
+                       
+                      $.ajax({
+                          url:"/updatecluster",
+                          data:{"target":"POS","clstrid":clstrid,"x":Number(x2),"y":Number(y2)},
+                          method:"post",
+                          dataType:"JSON",
+                          success:function(data){
+                            
+                             $("#defaultModal").modal("hide");
+
+                              scMainSvg.append("text").attr("class","clstrlabel").attr("name","clstr"+clstrid).text(clstrText).attr("x",mainXscale(x2)+margin).attr("y",mainYscale(y2)+margin);
+  
+                          },
+                          error:function(){
+
+
+                              alert("save error")
+                          }
+
+
+
+                      }) 
+
+                      
+
+                      
+                    });
+
+                     
+
+                }
+                  
+                  
+            })
+
+              
+    
+
+
+
+          }//renderactions
+
+
+
+          pointInPolygon = function (point, vs) {
+            // ray-casting algorithm based on
+            // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+            var xi, xj, i, intersect,
+                x = point[0],
+                y = point[1],
+                inside = false;
+            for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+              xi = vs[i][0],
+              yi = vs[i][1],
+              xj = vs[j][0],
+              yj = vs[j][1],
+              intersect = ((yi > y) != (yj > y))
+                  && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+              if (intersect) inside = !inside;
+            }
+            return inside;
+          }
+
+
+          
+          function renderGenesearchPlot(div,gene){
+            
+            startLoadingDiv(div)
+            
+
+            $.ajax({
+
+              url:"/getGeneSearchPlotData",
+              data:{"gene":gene,spid:sampleObjectId},
+              method:'post',
+              dataType:"JSON",
+              success:function(data){
+                  endLoadingDiv(div);
+
+                  var barplotdata = data.data;
+                  div.html("<div id='barsvgdiv'></div>");
+                  renderBarplot("#barsvgdiv",barplotdata,gene,false);
+                  
+
+              },error:function(){
+
+                  endLoadingDiv(div);
+
+              }
+
+
+
+            })
+
+
+
+          }
+
+          function renderBarplot(div,data,geneName,issort){
+            
+
+
+            var minv=Infinity;
+            var maxv =0;
+
+            if(issort){
+
+
+
+            
+              for(var i=0;i<data.length;i++){
+
+                for(var j=i;j<data.length;j++){
+
+                  var val1 = data[i]["median"];
+                  var val2 = data[j]["median"];
+
+                  if(val2 > val1){
+                    temp =  data[i];
+                    data[i]=data[j];
+                    data[j]=temp;
+                    
+
+                  }
+                }
+
+              }
+
+            }
+            for(var i=0;i<data.length;i++){
+
+              var tempmax = data[i]["max"];
+              var tempmin = data[i]["min"];
+
+              if(tempmin<minv){
+                minv = tempmin;
+              }
+              if(tempmax>maxv){
+                maxv = tempmax;
+              }
+
+              
+
+            }
+
+
+            
+
+
+            var divwidth = $(div).width();
+
+            var barmargin={ right:26,bottom:100,top:36, left:45};
+            var width =  Math.ceil(divwidth - barmargin.left - barmargin.right);
+            var height = 220;
+            var barheight =height/2;
+            var gap=20;
+
+            $(div).html("");
+            var svg = d3.select(div).append("svg").attr("id",'barsvg')
+              .attr("width", width +  barmargin.left +  barmargin.right)
+              .attr("height", height +  barmargin.top + barmargin.bottom+gap);
+
+            var maxmedian=0;
+            var labels=[];
+
+            for(var i in data){
+
+              median = data[i]["median"];
+              if(median > maxmedian){
+
+                maxmedian = median;
+              }
+
+              labels.push(data[i]["name"])
+
+
+            }
+
+
+            var xliner = d3.scaleLinear()
+                .domain([0, labels.length+1 ])
+                .range([0, width]);
+
+
+            var yliner1 = d3.scaleLinear()
+                .domain([0, 1])
+                .range([barheight,0]);
+
+
+
+            var yliner2 = d3.scaleLinear()
+                .domain([minv, maxv])
+                .range([barheight,0]);
+
+
+            var xAxis = d3.axisBottom(xliner).tickFormat("").ticks(labels.length+1);
+            var yAxis1 = d3.axisLeft(yliner1);
+            var yAxis2 = d3.axisLeft(yliner2);
+
+            var barg = svg.append("g").attr("id","barg").attr("transform",  "translate("+barmargin.left+"," + (barmargin.top) + ")")
+            svg.append('g').attr("transform",  "translate("+barmargin.left+"," + (barmargin.top) + ")").call(yAxis1);
+            svg.append('g').attr("transform",  "translate("+barmargin.left+"," + ( barmargin.top+barheight+gap) + ")").call(yAxis2); 
+
+            svg.append('g').attr("transform", "translate("+barmargin.left+"," + (barheight+barmargin.top) + ")").call(xAxis);
+            svg.append('g').attr("transform", "translate("+barmargin.left+"," + ( barmargin.top+2*barheight+gap) + ")").call(xAxis);
+
+
+            svg.append('g')
+               .attr("transform", "translate("+barmargin.left+"," + ( barmargin.top-12) + ")")
+               .append("text")
+               .text(geneName)
+               .style("fill",'black');
+
+
+            
+            for(var i=0;i<labels.length;i++){
+              
+
+              barg.append("g").attr("class","xlabel2").attr("transform", "translate("+xliner(i+1)+"," + (2*barheight+gap) + ")")
+                .append("text").text(labels[i]).style("text-anchor", "end")
+                      .attr("dx", "-.8em")
+                      .attr("dy", ".15em")
+                      .style("font-size",10)
+                      .attr("transform", "rotate(-90)");
+
+
+            }
+
+
+            var plot1y = barheight;
+            var plot2y = barheight+gap;
+            var barwidth = width/data.length/2;
+            var boxwidth = barwidth;
+            var hf_boxwidth = barwidth/2
+            if(barwidth> 33){
+              barwidth =33;
+            }
+            for(var i=0;i<data.length;i++){
+
+              var color = data[i]["color"];
+              var percval =data[i]["perc"];
+              var barh1 = yliner1(percval);
+              barh1 = barheight-barh1;
+
+              var y1 = plot1y-barh1
+              var x = xliner(i+1)-(barwidth/2);
+
+              var boxx1 = xliner(i+1)-(hf_boxwidth);
+              var boxx2 = xliner(i+1)+(hf_boxwidth);
+
+
+              barg.append("rect").attr("x",x).attr("y",y1).attr("width",barwidth).attr("height",barh1).style("fill",color);
+              //.style("fill",data[i]["color"]);
+              
+              var min= yliner2(data[i]["min"]);
+              var max = yliner2(data[i]["max"]);
+              var median = yliner2(data[i]["median"]);
+              var q1 = yliner2(data[i]["1q"]);
+              var q3 = yliner2(data[i]["3q"]);
+              //alert(medianval)
+
+              
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+median)
+                .attr("y2",plot2y+median)
+                .style("stroke-width",1);
+
+
+              
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+max)
+                .attr("y2",plot2y+max)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+min)
+                .attr("y2",plot2y+min)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q1)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q3)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx1)
+                .attr("x2",boxx1)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",boxx2)
+                .attr("x2",boxx2)
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",xliner(i+1))
+                .attr("x2",xliner(i+1))
+                .attr("y1",plot2y+max)
+                .attr("y2",plot2y+q3)
+                .style("stroke-width",1);
+
+              barg.append("line")
+                .style("stroke",color)
+                .attr("role","box")
+                .attr("x1",xliner(i+1))
+                .attr("x2",xliner(i+1))
+                .attr("y1",plot2y+q1)
+                .attr("y2",plot2y+min)
+                .style("stroke-width",1);
+
+              /*
+              var barh2 = yliner2(medianval);
+              barh2 = barheight-barh2;
+              
+              barg.append("rect").attr("x",x).attr("y",y2).attr("width",barwidth).attr("height",barh2).style("fill","#3376FF");
+              //.style("fill",data[i]["color"]);
+              */
+            }
+            var label1= svg.append("g").attr("class","boxbar").attr("transform", "translate( "+(barmargin.left-35)+","+(barmargin.top+gap +barheight+barheight/2)+" ) rotate(-90)")
+            .append("text").text("nonzero boxplot").style("font-size","13")
+              .attr("text-anchor", "middle");
+              //.attr("x",barmargin.left-30).attr("y",barmargin.top+barheight/2);//;
+            var label2= svg.append("g").attr("class","percbar").attr("transform", "translate( "+(barmargin.left-35)+" , "+(barmargin.top+barheight/2)+" ) rotate(-90)")
+              .append("text").text("nonzero percentage").attr("text-anchor", "middle").style("font-size","13");
+            //.attr("x",barmargin.left-30).attr("y",barmargin.top+barmargin.bottom+barheight+barheight/2); 
+
+             
+
+          }
+
+
+
+
+
+          function execafterselected(selectednodes){
+            var targetdiv = $("#clustersInfo").find("[name='sellectcelldiv']");
+            targetdiv.html("<span style='color:steelblue;'>"+selectednodes.length +"</span> cells be selected<br><div name='selectedcalculationsavediv'></div>");
+
+            targetdiv.find("[name='selectedcalculationsavediv']").html("<button class='btn btn-primary btn-sm' name='contrastbtn'> Contrast </button>&nbsp;&nbsp;<span class='btn btn-info btn-sm' name='savebtn'> Save </span>");
+
+
+            $("#clustersInfo").find("[name='contrastwithselected']").show();
+
+            targetdiv.find("[name='contrastbtn']").click(function(){
+
+                //do contrast
+                var cellids = selectednodes.join(",");
+
+                docontrast(cellids,"ALL");
+                
+
+
+
+
+
+            })
+            //
+
+
+
+
+            targetdiv.find("[name='selectedcalculationsavediv']").find("[name='savebtn']").click(function(){
+
+
+              $("#defaultModal").find(".modal-title").html("Cluster Editor");
+              $("#defaultModal").find(".modal-footer").html("");
+                     
+
+              var modalbody = $("#defaultModal").find(".modal-body");
+              modalbody.html("");
+              modalbody.append("<div><span>Cluster Type:</span><select class='form-control form-control-sm' name='clstrtypeinput'><option value='cellType'>Cell Type</option><option value='Patient'>Patient</option></select></div>");
+              modalbody.append("<div><span>Cluster Name :</span><div name='clstrnameinputdiv'></div></div>");
+
+              modalbody.append("<div><span>Mark Genes:</span><textarea class='form-control' name='markgenestextarea'></textarea></div>");
+              modalbody.append("<div><span>Comment:</span><textarea  type='text' class='form-control form-control-sm' name='clstrcommentinput'></textarea></div><div style='height:5px;'></div>");
+              modalbody.append("<button name='saveclstrbtn' class='btn btn-primary btn-sm'>Save</button>");
+
+
+
+
+
+              modalbody.find("[name='clstrtypeinput']").change(function(){
+
+                  var clstrtype = modalbody.find("[name='clstrtypeinput']").val();
+                  renderclusternameinput(clstrtype);
+
+              });
+
+              modalbody.find("[name='clstrtypeinput']").trigger("change");
+
+              function renderclusternameinput(clstr){
+                
+                 
+                  $.ajax({
+                      url:"/getClusterClassification",
+                      data:{"clstrType":clstr},
+                      method:'post',
+                      dataType:"JSON",
+                      success:function(data){
+                        //endLoading2();
+                        data = data.clstrTypes;
+
+                       
+
+                        renderClstrSelectMenu(data,modalbody.find("[name='clstrnameinputdiv']"));
+
+
+                      },error:function(){
+
+                        //errorLoading2();
+
+                      }
+
+                  })
+
+
+                
+                
+
+              }
+
+
+              modalbody.find("[name='saveclstrbtn']").click(function(){
+                  var name = modalbody.find("[name='clstrnameinput']").val();
+                  var type = modalbody.find("[name='clstrtypeinput']").val();
+                  var comment = modalbody.find("[name='clstrcommentinput']").val();
+                  var markgenes = modalbody.find("[name='markgenestextarea']").val();
+
+                  name = name.trim();
+
+                  if(name === ""){
+                     alert("input a name of cluster");
+                  }else{
+                      $.ajax({
+                        url:"/savecluster",
+                        data:{"sampleid":sampleObjectId,name:name,type:type,comment:comment,"cells":selectednodes.join(","),"marks":markgenes},
+                        method:"post",
+                        dataType:"JSON",
+                        success:function(data){
+                          
+                          if(data.status==="success"){
+
+                              targetdiv.find("[name='selectedcalculationsavediv']").find("[name='savebtn']").html("<span style='color:green;'>success</span>").removeAttr("class");
+
+                              var tempstr="<tr clstrtype='"+type+"' precheck='F'>";
+                              tempstr+="<td colored='F' cid='"+data.cid+"' ischecked='F'><i class='far fa-square' style='color: steelblue;cursor:pointer;'></i></td>"
+                              tempstr+="<td cname='"+name+"' style='color:"+data["color"]+";cursor:default;'>"+name+"</td>";
+                              tempstr+="<td name='marks'>"+markgenes+"</td>";
+
+                              tempstr+="<td name='contrastaction'><button class='btn btn-sm btn-primary' name='contrastglobal' style='font-size:11px;display:inline-block;color:white;'>Contrast</button></td>";
+                              
+                              var userrole = sessionStorage.getItem("userrole");
+                              if(userrole==="admin"){
+
+                                tempstr+="<td name='adminaction'>" + "<button class='btn btn-sm btn-primary' name='adminclstr' style='font-size:11px;display:inline-block;color:white;'><i class='fas fa-cog'></i></button>"+ "<div name='adminactionbtns' style='display:none;'><button class='btn btn-sm btn-warning' name='editclstr' style='font-size:11px;display:inline-block;color:white;'><i class='fas fa-edit'></i></button>&nbsp;<button class='btn btn-sm btn-danger' name='deleteclstr' style='font-size:11px;display:inline-block;'><i class='fas fa-trash-alt'></i></button>&nbsp;<button class='btn btn-sm btn-primary' name='labeltoclstr' style='font-size:11px;display:inline-block;'>Set Label</button></div>"+"</td>";
+                              }
+
+
+
+                              tempstr+='</tr>'
+
+                              $("#clustersInfo").find("[name='clusterdetailtable']").find("tbody").append(tempstr)
+
+                          }else{
+
+                              targetdiv.find("[name='selectedcalculationsavediv']").find("[name='savebtn']").html("<span style='color:red;'>save cluster error</span>").removeAttr("class");;
+
+                          }
+
+                        },
+                        error:function(){
+
+
+                            targetdiv.find("[name='selectedcalculationsavediv']").find("[name='savebtn']").html("<span style='color:red;'>save cluster error</span>").removeAttr("class");;
+                        }
+
+
+
+                      })
+                      
+
+                  }
+
+
+              })//save
+
+
+
+
+
+              $("#defaultModal").modal("show");
+
+
+
+
+            })
+          
+          }
+
+           
+          function renderClstrSelectMenu(data,div){
+            
+            div.html("<select  type='text' name='clstrnameinput'><select>");
+            div.find("[name='clstrnameinput']").selectize({
+
+                options:data,
+                valueField:"_id",
+                labelField:"_id",
+                searchField:"_id",
+                render: {
+                    item: function(item, escape) {
+
+                      return "<div>"+item._id+"</div>";
+                    },
+                    option: function(item, escape) {
+                         
+                        var path = item.path;
+
+                        path.push("<span style='color:green;'>"+item._id+"</span>");
+
+                        var path = path.join("->");
+
+                          return '<div><span class="caption">' + path + '</span></div>';
+                    }
+                    
+                },
+
+
+            })
+
+
+
+          }
+
+
+          
+
+
+          function startLoading(){
+
+
+              var loadingstr='<div class="h-100" style="display: flex;justify-content: center;align-items: center;vertical-align: middle;"><div class="loader"><div class="dot dot1"><i></i></div><div class="dot dot2"><i></i></div><div class="dot dot3"><i></i></div><div class="dot dot4"><i></i></div><div class="dot dot5"><i></i></div><div class="dot dot6"><i></i></div><div class="dot dot7"><i></i></div><div class="dot dot8"><i></i></div><div class="dot dot9"><i></i></div></div></div>'
+
+
+
+              $("#mainpanel").html(loadingstr);
+
+              $("#infopanel").html(loadingstr);
+          }
+
+
+          function startLoading2(){
+
+
+              $("#loadingcanvas").show();
+
+              
+
+              
+          }
+
+          function clearnmain(){
+            $("#mainpanel").html("");
+
+          }
+          function clearninfo(){
+            $("#infopanel").html("");
+            
+          }
+          function endLoading2(){
+
+
+              $("#loadingcanvas").hide();
+
+
+          }
+
+          function endLoading(){
+
+              $("#mainpanel").html("");
+
+              $("#infopanel").html("");
+
+
+          }
+
+          function errorLoading2(){
+              $("#loadingcanvas").hide();
+              $("#mainpanel").html("server error");
+
+              $("#infopanel").html("server error");
+
+
+          }
+
+          function errorLoading(){
+
+              $("#mainpanel").html("server error");
+
+              $("#infopanel").html("server error");
+
+
+          }
+
+
+          function startLoadingDiv(div){
+
+
+              var loadingstr='<div class="h-100" style="display: flex;justify-content: center;align-items: center;vertical-align: middle;"><div class="loader"><div class="dot dot1"><i></i></div><div class="dot dot2"><i></i></div><div class="dot dot3"><i></i></div><div class="dot dot4"><i></i></div><div class="dot dot5"><i></i></div><div class="dot dot6"><i></i></div><div class="dot dot7"><i></i></div><div class="dot dot8"><i></i></div><div class="dot dot9"><i></i></div></div></div>'
+
+
+
+              div.html(loadingstr);
+ 
+          }
+
+          function endLoadingDiv(div){
+
+
+              div.html("");
+
+
+          }
+
+
+          function errorLoadingDiv(div){
+
+              div.html("server error");
+          }
+
+
+          function initComponents(){
+
+
+              $("#dragablediv").draggable({
+          
+                  handle: "[name='dragabledivheader']"
+              });
+
+
+              $("#dragablediv").find("[name='closedragablepanel']").click(function(){
+
+                  
+
+                  $("#dragablediv").hide(300);
+
+              });
+
+
+
+
+
+
+
+          }
+
+
+          function docontrast2(clusterid,target){
+
+                $("#dragablediv").find("[name='dragablepaneltitle']").html("contrast result");
+                $("#dragablediv").show(300);
+
+                var targetdiv = $("#dragablediv").find(".card-body");
+                startLoadingDiv(targetdiv)
+                $.ajax({
+                      url:"/contrast2",
+                      data:{"clstr":clusterid,"target":target,"sampleid":sampleObjectId},
+                      method:'post',
+                      dataType:"JSON",
+                      success:function(data){
+                        endLoadingDiv(targetdiv);
+                        //alert(JSON.stringify(data.res));
+                        var res=data.res;
+                        renderbarplotofpvalrank(res,targetdiv,clusterid,"cid",target);
+
+
+                        //dragablediv.
+                      },error:function(){
+
+                        //errorLoading2();
+
+                      }
+
+                })
+
+
+          }
+
+
+          function docontrast(cellids,target){
+                $("#dragablediv").find("[name='dragablepaneltitle']").html("contrast result");
+                $("#dragablediv").show(300);
+
+                var targetdiv = $("#dragablediv").find(".card-body");
+                startLoadingDiv(targetdiv);
+
+                $.ajax({
+                      url:"/contrast",
+                      data:{"cells":cellids,"target":target,"sampleid":sampleObjectId},
+                      method:'post',
+                      dataType:"JSON",
+                      success:function(data){
+                        endLoadingDiv(targetdiv);
+                        //alert(JSON.stringify(data.res));
+                        var res=data.res;
+                        renderbarplotofpvalrank(res,targetdiv,cellids,"cells",target);
+
+
+                        //dragablediv.
+                      },error:function(){
+
+                        //errorLoading2();
+
+                      }
+
+                })
+
+
+
+          }
+
+
+          function renderbarplotofpvalrank(data,div,data1,dttype,data2){
+            //$(div).html("<svg id='rankingplot' style='width:100%;'></svg>");
+            
+            var p= data.p;
+            var n = data.n;
+
+            var pdata=[];
+            var ndata=[];
+
+            var temp;
+
+            for(var i =0;i<p.length;i++){
+              var g=p[i];
+              var x =i%8;
+
+              if(x===0){
+
+                temp=[g,"","","","","","",""];
+
+              }else if(x ===7){
+
+                temp[x]=g;
+                pdata.push(temp);
+                temp=[];
+
+
+              }else{
+                temp[x]=g;
+              }
+            }
+            if(temp.length>0){
+
+              pdata.push(temp);
+
+            }
+
+            p=null;
+
+            temp=[]
+            for(var i =0;i<n.length;i++){
+              var g=n[i];
+              var x =i%8;
+
+              if(x===0){
+
+                temp=[g,"","","","","","",""];
+
+              }else if(x ===7){
+
+                temp[x]=g;
+                ndata.push(temp);
+                temp=[];
+
+
+              }else{
+                temp[x]=g;
+              }
+
+            }
+            if(temp.length>0){
+
+              ndata.push(temp);
+
+            }
+            n=null;
+
+
+
+
+            
+            div.html("<h5>Positive Genes</h5><table name='contrastPostable' class='table table-striped display table-bordered compact' style='width:100%;'></table><hr></hr><h5>Negative Genes</h5><table name='contrastNagtable' style='width:100%;' class='table table-striped display table-bordered compact'></table><hr></hr><div name='plotdiv'></div>");
+            var posTable=div.find("[name='contrastPostable']").DataTable({
+                searching: false,
+                info: false,
+                "ordering": false,
+                "pageLength": 5,
+                "lengthChange": false,
+                               
+                //"pagingType": "simple",
+                "scrollX": true,
+                fixedHeader: true,
+                data:pdata,
+                "columns": [
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                ],
+                "columnDefs": [
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 0
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                           return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 1
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 2
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                           return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 3
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                           return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 4
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 5
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                           return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 6
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 7
+                    },
+                     
+                ]
+                         
+
+            });
+            var nagTable=div.find("[name='contrastNagtable']").DataTable({
+
+                data:ndata,
+                searching: false,
+                info: false,
+                fixedHeader: true,
+                "ordering": false,
+                "pageLength": 5,
+                "lengthChange": false,
+                               
+                "scrollX": true,
+                "columns": [
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                ],
+                "columnDefs": [
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 0
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 1
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 2
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 3
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 4
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 5
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 6
+                    },
+                    {
+                        
+                        "render": function ( data, type, row ) {
+                            return "<span style='font-size:11px;' class='genebtn'>"+data+"</span>"  ;
+                        },
+                        "targets": 7
+                    },
+                     
+                ]
+              
+            });
+
+            div.find("th").hide();
+
+            div.on("click",".genebtn",function(){
+
+                div.find(".genebtn").css("color","black");
+                var gene=$(this).text();
+                $(this).css("color","steelblue");
+                
+                //render gene expr
+                //contrast gene search
+                //data1,dttype,data2,sampleObjectId
+
+                clearAllNodes();
+                $.ajax({
+
+                    url:"/contrastGeneSearch",
+                    data:{"sampleid":sampleObjectId,"gene":gene,"sampleid":sampleObjectId,"data1":data1,"dttype":dttype,"data2":data2},
+                    method:"post",
+                    dataType:"JSON",
+                    success:function(data){
+
+
+                      var expr = data.expr;
+                      var plotdata = data.plot;
+
+                      var maxval =data.maxval;
+
+                      var redscale = d3.scaleLinear()
+                          .domain([0,maxval])
+                          .range(["#ff8080", "#800000"]);
+
+                      for(i in expr){
+                        
+                        d3.select("#g"+i).style("fill",redscale(expr[i]));
+                      }
+
+                      div.find("[name='plotdiv']").html("<div id='contrastbarsvgdiv'></div>");
+                      renderBarplot("#contrastbarsvgdiv",plotdata,gene,false);
+                      //renderGenesearchPlot(genesearchpanel.find("[name='genesearchdetails']").find("[name='genesearchplot']"),gene);
+
+                    },
+                    error:function(){
+
+
+                    }
+
+                })
+                
+
+
+                
+
+
+            })
+
+          }
+
+
+
+
+
+
+
+
+      });
+
+    </script>
+
+
+
+
+
+
+  </body>
+</html>
