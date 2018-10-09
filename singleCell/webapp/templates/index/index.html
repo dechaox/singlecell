@@ -427,7 +427,6 @@
 
                     }
 
-
                 })
 
             });
@@ -449,7 +448,14 @@
                 if("marks" in clstrdata[i]){
                   marks=clstrdata[i]["marks"]
                 }
-                tabledata.push({"cid":clstrdata[i]["_id"],"prerender":clstrdata[i]["prerender"] ,"name":clstrdata[i]["clstrName"],"marks":marks,"color":clstrdata[i]["color"]})
+                var negmarks=[];
+                if("negmarks" in clstrdata[i]){
+
+                  negmarks = clstrdata[i]["negmarks"];
+                }
+
+
+                tabledata.push({"cid":clstrdata[i]["_id"],"prerender":clstrdata[i]["prerender"] ,"name":clstrdata[i]["clstrName"],"marks":marks,"negmarks":negmarks,"color":clstrdata[i]["color"]})
               }
 
               clstrtable.clear();
@@ -1126,11 +1132,11 @@
 
             var panelstr='<ul class="nav nav-tabs controlpanel">';
               panelstr+='<li class="nav-item">';
-                panelstr+='<a class="nav-link active" data-toggle="tab" href="#genesearch">Gene Search</a>';
+                panelstr+='<a class="nav-link active" data-toggle="tab" href="#genesearch">Gene Profiles</a>';
 
               panelstr+='</li>';
               panelstr+='<li class="nav-item">';
-                panelstr+='<a class="nav-link" data-toggle="tab" href="#clustersInfo">Clusters</a>';
+                panelstr+='<a class="nav-link" data-toggle="tab" href="#clustersInfo">Cell Subsets</a>';
               panelstr+='</li>';
                
             panelstr+='</ul>';
@@ -1169,9 +1175,18 @@
             //
 
             var clsterswitch = clusterpanel.find("[name='clsterswitch']");
-            for(var  i in clstrs){
 
-              clsterswitch.append("<option value='"+i+"'>"+i+"</option>");
+            if("cellType" in clstrs){
+
+
+              clsterswitch.append("<option value='cellType'>cellType</option>");
+            }
+
+            for(var  i in clstrs){
+              if(i !=="cellType"){
+                  clsterswitch.append("<option value='"+i+"'>"+i+"</option>");
+              }
+              
 
             }
             
@@ -1194,10 +1209,28 @@
             });
             
 
-            //genesearch
+            //genesearch 
+            genesearchpanel.html("<div style='width:52%;display:inline-block;'><textarea name='genesearcharea' rows='4' style='width:100%;max-width:200px;'></textarea></div><div style='width:48%;display:inline-block;font-size:12px;padding-left:14px;color:#111;'><span> - Paste a list of gene symbols</span><br><span> - <u name='quicksearchgenes' style='cursor:pointer;'>Click here</u> for cell markers</span><br><span> - Use wildcard (e.g MMP*)</span><br><br><br></div><br>")
+            genesearchpanel.append("<div><button name='genesearchbtn' class='btn btn-primary btn-sm'>Search</button>&nbsp;&nbsp;<button name='cleargenesearchbtn' class='btn btn-secondary btn-sm'>Clear</button></div><hr></hr><div name='genesearchdetails'></div>")
 
-            genesearchpanel.html("<textarea name='genesearcharea' rows='4' style='width:100%;max-width:200px;'></textarea><br>")
-            genesearchpanel.append("<button name='genesearchbtn' class='btn btn-primary btn-sm'>search</button><hr></hr><div name='genesearchdetails'></div>")
+
+
+            genesearchpanel.find("[name='quicksearchgenes']").click(function(){
+
+                var tempgenes ="cd1c mgp cd3d cdh17 csf1r ctgf trem1 cd19 muc13 pigr ak3 cd40lg dcn cd68 fcer1a c1s cd33 cd14 hck foxp3 mme ms4a1 ceacam5 f13a1 serpinh1 tpsab1 ms4a7 clu bank1 cd4 cyr61 ms4a6a gnly csf3r clec4e serpine1 clec7a il1b dmbt1 vwf lum fgf23 c5ar1 lcn2 irak3 cd28 sparc cd96 spink4 krt8 cd3g acta2 ccr7 vil1 fcgr3a mzb1 olfm4 xpnpep2 cd8a c1r cd247 epcam ncam1 ceacam1 tagln col1a2 spdef sele alpi stab1 cdhr2 cd2 c1qb thy1 fcn1 krt18 c1qa cd3e bgn";
+
+                tempgenes = tempgenes.toUpperCase().replace(/ /g,"\n")
+
+                genesearchpanel.find("[name='genesearcharea']").val(tempgenes);
+
+            })
+
+            genesearchpanel.find("[name='cleargenesearchbtn']").click(function(){
+
+              genesearchpanel.find("[name='genesearcharea']").val("");
+
+
+            })
             
             genesearchpanel.find("[name='genesearchbtn']").click(function(){
               var genestr = genesearchpanel.find("[name='genesearcharea']").val();
@@ -3701,32 +3734,41 @@
 
       function renderPlotSelection1(infodiv,data){
 
+        var data2={};
         var optstr =[];
         for(var i in data){
-          optstr+=  "<option value='"+data[i]+"'>"+data[i]+"</option>" ;
-        }
- 
+          optstr+=  "<option value='"+data[i]["_id"]+"'>"+data[i]["_id"]+"</option>" ;
 
-        var renderstr ="<h6>Select a study</h6><select class='form-control form-control-sm'  onchange='renderPlotSelection2(this.value)'>"+optstr+"</select><div name='PlotSelection2'></div>";
+          data2[data[i]["_id"]] = data[i]["tissues"];
+        }
+
+        var renderstr ="<h6>Select a study</h6><select class='form-control form-control-sm'  onchange='renderPlotSelection2(data2[this.value])'>"+optstr+"</select><div name='PlotSelection2'></div>";
 
 
 
         infodiv.html(renderstr);
 
 
-        var currentdata = data[i];
+        var currentdata = data[0]["_id"];
+ 
 
-
-        renderPlotSelection2(currentdata)
-
-
+        renderPlotSelection2(data2[currentdata])
 
 
       }
-      function renderPlotSelection2(val){
+      function renderPlotSelection2(tissues){
+
+        $("[name='PlotSelection2']").html("<br><h6>Select Tissues</h6><div name='tissueselect'></div><div name='PlotSelection3'> </div>")
+        
+        var tissuediv = $("[name='tissueselect']");
+        for(var i in tissues){
+
+          tissuediv.append("<input type='checkbox' name='tissue' value='"+tissues[i]+"'>  "+tissues[i]+"<br>");
 
 
-        $("[name='PlotSelection2']").html("this function coming soon")
+        }
+
+        //$("[name='PlotSelection2']").html("this function coming soon")
         /*
           $.ajax({
                       url:"/getAllTissueByStudies",

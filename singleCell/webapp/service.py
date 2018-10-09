@@ -654,7 +654,15 @@ def getClusterNameById(cid):
 
 def getAllClusterStudies():
 
-	studies = db.dataInfo.distinct("study");
+	studies = db.dataInfo.aggregate([
+		{"$group":{
+			 "_id":"$study" ,
+			 "tissues":{"$addToSet":"$tissue"} 
+		}}
+	]);
+
+
+	studies =list(studies);
 
 	return studies;
 
@@ -662,7 +670,7 @@ def getAllClusterStudies():
 
 def getAllTissueByStudies(study):
 	data = db.dataInfo.find({"study":study});
-	
+
 
 
 
